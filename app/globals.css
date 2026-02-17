@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary: 139 92 246;
+  --color-surface: 22 18 31;
+  --dark-bg: #0c0a12;
+  --dark-surface: #16121f;
+  --accent: #8B5CF6;
+}
+
+body {
+  font-feature-settings: "rlig" 1, "calt" 1;
+  @apply antialiased;
+}
+
+body.theme-dark {
+  @apply text-white;
+  background: linear-gradient(135deg, #0c0a12 0%, #1a1525 40%, #120f1f 100%);
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Resume PDF export: ensure clean print */
+.resume-pdf-source {
+  width: 210mm;
+  min-height: 297mm;
+}
