@@ -17,6 +17,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # Secrets (do not commit)
+.env
 apikeys.txt
 client_id_secret.txt
 
