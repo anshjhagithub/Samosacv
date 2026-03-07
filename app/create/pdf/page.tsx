@@ -10,14 +10,16 @@ import { LoginModal } from "@/components/auth/LoginModal";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 
 const inputClass =
-  "w-full rounded-xl border-2 border-amber-200/80 bg-white px-4 py-3.5 text-stone-900 placeholder-stone-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none transition-all shadow-sm";
+  "w-full rounded-xl border-2 border-amber-200/80 bg-white px-4 py-3.5 text-stone-900 placeholder-stone-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none transition-all";
 
-export default function CreateJobDescriptionPage() {
+export default function CreatePdfPage() {
   const router = useRouter();
   const [showLogin, setShowLogin] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
   const [jobDescription, setJobDescription] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -29,9 +31,8 @@ export default function CreateJobDescriptionPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError(null);
-    const trimmed = jobDescription.trim();
-    if (!trimmed || trimmed.length < 50) {
-      setSubmitError("Paste a job description (at least 50 characters).");
+    if (!file) {
+      setSubmitError("Choose a PDF file to upload.");
       return;
     }
     const supabase = createClient();
@@ -42,13 +43,13 @@ export default function CreateJobDescriptionPage() {
     }
     setLoading(true);
     try {
+      const formData = new FormData();
+      formData.append("file", file);
+      if (jobDescription.trim()) formData.append("jobDescription", jobDescription.trim());
       const res = await fetch("/api/resume/extract", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({ content: "", jobDescription: trimmed }),
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        body: formData,
       });
       const data = await res.json();
       if (res.status === 401) {
@@ -90,10 +91,10 @@ export default function CreateJobDescriptionPage() {
           className="text-center mb-10"
         >
           <h1 className="text-2xl sm:text-3xl font-bold text-stone-900 mb-2">
-            Create from job description
+            Upload PDF resume
           </h1>
           <p className="text-stone-600 text-sm">
-            Paste a job posting. We&apos;ll generate a tailored resume — pay ₹5 when you download.
+            We&apos;ll extract the text and open the builder — pay ₹5 when you download.
           </p>
         </motion.div>
 
@@ -116,31 +117,62 @@ export default function CreateJobDescriptionPage() {
           )}
 
           <div className="rounded-2xl border-2 border-amber-200/80 bg-white/95 p-5 sm:p-6 shadow-md">
-            <label htmlFor="job-desc" className="block text-sm font-semibold text-stone-800 mb-2">
-              Job description
-            </label>
+            <label className="block text-sm font-semibold text-stone-800 mb-2">PDF file</label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,application/pdf"
+              onChange={(e) => {
+                setFile(e.target.files?.[0] ?? null);
+                setSubmitError(null);
+              }}
+              className="sr-only"
+              aria-label="Choose PDF file"
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full rounded-xl border-2 border-dashed border-amber-200 bg-amber-50/70 px-4 py-4 text-sm font-medium text-stone-600 hover:border-amber-400 hover:bg-amber-100/80 transition-all inline-flex items-center justify-center gap-2"
+            >
+              <svg className="w-5 h-5 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              {file ? file.name : "Choose PDF file"}
+            </button>
+            {file && (
+              <button
+                type="button"
+                onClick={() => setFile(null)}
+                className="mt-2 text-xs text-stone-500 hover:text-red-600"
+              >
+                Remove
+              </button>
+            )}
+          </div>
+
+          <div className="rounded-2xl border-2 border-amber-200/80 bg-white/95 p-5 sm:p-6 shadow-md">
+            <label className="block text-sm font-semibold text-stone-800 mb-2">Job description (optional)</label>
             <textarea
-              id="job-desc"
               value={jobDescription}
               onChange={(e) => setJobDescription(e.target.value)}
-              placeholder="Paste the full job posting here (at least 50 characters)…"
-              rows={8}
+              placeholder="Paste a job description to tailor your resume…"
+              rows={2}
               className={inputClass}
             />
           </div>
 
           <button
             type="submit"
-            disabled={loading || jobDescription.trim().length < 50}
+            disabled={loading || !file}
             className="w-full rounded-2xl bg-amber-600 px-6 py-4 text-base font-semibold text-white shadow-lg shadow-amber-900/20 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:-translate-y-0.5"
           >
-            {loading ? "Creating…" : "Create resume"}
+            {loading ? "Generating…" : "Generate resume"}
           </button>
         </motion.form>
 
         <p className="mt-8 text-center text-stone-500 text-sm">
           <Link href="/create" className="text-amber-700 hover:underline font-medium">
-            Import from PDF or paste instead
+            Paste text instead
           </Link>
           {" · "}
           <Link href="/create" className="text-amber-700 hover:underline font-medium">
@@ -149,7 +181,7 @@ export default function CreateJobDescriptionPage() {
         </p>
       </main>
 
-      <LoginModal open={showLogin} onClose={() => setShowLogin(false)} redirectAfterLogin="/create/job-description" />
+      <LoginModal open={showLogin} onClose={() => setShowLogin(false)} redirectAfterLogin="/create/pdf" />
     </div>
   );
 }

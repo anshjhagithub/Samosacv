@@ -2,6 +2,7 @@
 
 import type { ResumeData } from "@/types/resume";
 import type { ResumeTheme } from "./themes";
+import { PhotoOrInitials } from "./PhotoOrInitials";
 
 function SectionHeader({
   theme,
@@ -105,17 +106,23 @@ export function ThemedResume({
         ))}
       </section>
 
-      {projects.filter((p) => p.title || p.description).length > 0 && (
+      {projects.filter((p) => p.title || p.description || (p.bullets && p.bullets.length)).length > 0 && (
         <section className="mb-4">
           <SectionHeader theme={theme}>Projects</SectionHeader>
-          {projects.filter((p) => p.title || p.description).map((proj) => (
+          {projects.filter((p) => p.title || p.description || (p.bullets && p.bullets.length)).map((proj) => (
             <div key={proj.id} className="mb-2">
               <span className={`font-semibold text-gray-900 ${headingFont}`}>
                 {proj.title || "Project"}
               </span>
-              {proj.description && (
+              {proj.bullets && proj.bullets.length > 0 ? (
+                <ul className={`text-gray-700 ${textSize} mt-0.5 list-disc pl-4 space-y-0.5`}>
+                  {proj.bullets.map((b, i) => (
+                    <li key={i}>{b}</li>
+                  ))}
+                </ul>
+              ) : proj.description ? (
                 <p className={`text-gray-700 ${textSize} mt-0.5`}>{proj.description}</p>
-              )}
+              ) : null}
             </div>
           ))}
         </section>
@@ -138,14 +145,14 @@ export function ThemedResume({
         <div
           className={`w-20 flex-shrink-0 ${theme.sidebarBg} ${theme.sidebarText} p-4 rounded-l`}
         >
-          {personal.photoUrl && (
-            // eslint-disable-next-line @next/next/no-img-element -- user photo (data URL or external)
-            <img
-              src={personal.photoUrl}
-              alt=""
-              className="w-12 h-12 rounded-full object-cover border-2 border-white/30 mx-auto mb-2"
+          <div className="flex justify-center mb-2">
+            <PhotoOrInitials
+              photoUrl={personal.photoUrl}
+              fullName={personal.fullName || "Your Name"}
+              className="w-12 h-12 rounded-full object-cover"
+              borderClass="border-2 border-white/30"
             />
-          )}
+          </div>
           <h1 className="text-sm font-bold leading-tight">
             {personal.fullName || "Your Name"}
           </h1>
@@ -187,14 +194,12 @@ export function ThemedResume({
           )}
           {contact}
         </div>
-        {personal.photoUrl && (
-          // eslint-disable-next-line @next/next/no-img-element -- user photo (data URL or external)
-          <img
-            src={personal.photoUrl}
-            alt=""
-            className="w-14 h-14 rounded-full object-cover border-2 border-gray-300 flex-shrink-0"
-          />
-        )}
+        <PhotoOrInitials
+          photoUrl={personal.photoUrl}
+          fullName={personal.fullName || "Your Name"}
+          className="w-14 h-14 rounded-full object-cover flex-shrink-0"
+          borderClass="border-2 border-gray-300"
+        />
       </header>
       {mainContent}
     </div>

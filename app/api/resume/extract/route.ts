@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 import { extractResume } from "@/lib/ai/resume-extract";
 import { validateToken, confirmGeneration } from "@/lib/supabase/edgeFunctions";
 import { scoreResume, getTopMissingSkills, findRoleIntelligence, inferTargetRoleFromJobDescription } from "@/lib/ats/engine";
@@ -99,11 +100,12 @@ async function fetchLinkedInText(url: string): Promise<string> {
  * Accepts:
  * - FormData: file (PDF), jobDescription?, apiKey?
  * - JSON: { content?, linkedInUrl?, jobDescription?, apiKey? }
- * When ENFORCE_LIMITS: requires Authorization: Bearer <jwt> and X-Generation-Token: <token>.
+ * When ENFORCE_LIMITS: requires either X-Generation-Token (allocate flow) or X-Resume-Order-Id (pay-first upload flow).
  */
 export async function POST(request: Request) {
   const jwt = request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "").trim();
   const generationToken = request.headers.get("X-Generation-Token")?.trim();
+  const resumeOrderId = request.headers.get("X-Resume-Order-Id")?.trim();
 
   if (ENFORCE_LIMITS) {
     if (!jwt) {
@@ -112,18 +114,51 @@ export async function POST(request: Request) {
         { status: 401 }
       );
     }
-    if (!generationToken) {
-      return NextResponse.json(
-        { error: "Missing generation token. Request one from check-allocate first.", code: "BAD_REQUEST" },
-        { status: 400 }
-      );
-    }
-    const valid = await validateToken(jwt, generationToken);
-    if ("error" in valid) {
-      return NextResponse.json(
-        { error: "Invalid or expired generation token", code: "INVALID_TOKEN" },
-        { status: 401 }
-      );
+    if (resumeOrderId) {
+      const supabase = await createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return NextResponse.json({ error: "Sign in required", code: "UNAUTHORIZED" }, { status: 401 });
+      }
+      const { data: order } = await supabase
+        .from("orders")
+        .select("order_id, user_id, status")
+        .eq("order_id", resumeOrderId)
+        .eq("user_id", user.id)
+        .single();
+      if (!order || order.status !== "paid") {
+        return NextResponse.json(
+          { error: "Valid payment required. Complete payment and try again.", code: "PAYMENT_REQUIRED" },
+          { status: 402 }
+        );
+      }
+    } else if (generationToken) {
+      if (generationToken === "dev-bypass-no-limits") {
+        // Allow dev bypass when Edge Functions are unreachable (allocate returns this in dev)
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          return NextResponse.json({ error: "Sign in required", code: "UNAUTHORIZED" }, { status: 401 });
+        }
+      } else {
+        const valid = await validateToken(jwt, generationToken);
+        if ("error" in valid) {
+          return NextResponse.json(
+            { error: "Invalid or expired generation token", code: "INVALID_TOKEN" },
+            { status: 401 }
+          );
+        }
+      }
+    } else {
+      // Pay-at-download flow (like get started): signed-in user can extract; payment required at download in builder
+      const supabase = await createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return NextResponse.json(
+          { error: "Sign in required", code: "UNAUTHORIZED" },
+          { status: 401 }
+        );
+      }
     }
   }
 
@@ -226,7 +261,7 @@ export async function POST(request: Request) {
     });
     const tokens_used = (usage?.promptTokens ?? 0) + (usage?.completionTokens ?? 0);
     const api_cost_paise = usage ? apiCostPaise(usage.promptTokens, usage.completionTokens) : 0;
-    if (ENFORCE_LIMITS && generationToken) {
+    if (ENFORCE_LIMITS && generationToken && generationToken !== "dev-bypass-no-limits") {
       await confirmGeneration(generationToken, {
         success: true,
         tokens_used,
@@ -241,7 +276,7 @@ export async function POST(request: Request) {
     }
     return NextResponse.json(payload);
   } catch (err) {
-    if (ENFORCE_LIMITS && generationToken) {
+    if (ENFORCE_LIMITS && generationToken && generationToken !== "dev-bypass-no-limits") {
       await confirmGeneration(generationToken, { success: false });
     }
     console.error("Resume extract error:", err);

@@ -33,6 +33,7 @@ export const extractedEducationSchema = z.object({
 export const extractedProjectSchema = z.object({
   title: z.string(),
   description: z.string(),
+  bullets: z.array(z.string()).optional(),
 });
 
 export const extractedResumeSchema = z.object({

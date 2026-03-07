@@ -116,6 +116,8 @@ export interface ProjectEntry {
   id: string;
   title: string;
   description: string;
+  /** When present, render these as bullet points instead of a single description. */
+  bullets?: string[];
 }
 
 export interface ResumeData {

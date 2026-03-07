@@ -16,11 +16,11 @@ EXTRACTION RULES:
 - Extract structured resume data from raw text (LinkedIn, past resume, or mixed content). If a job description is provided, tailor the resume: use keywords from the job, reframe bullets to match responsibilities, and write a targeted summary.
 - For EVERY work experience bullet: use strong action verbs (Led, Delivered, Implemented, Reduced, Increased, Launched, Built, Optimized, etc.), include numbers/percentages/timeframes where possible (e.g. "Increased revenue by 25%", "Reduced load time by 40%", "Managed team of 8"), and keep each bullet to one clear achievement. Avoid vague phrases like "Responsible for" or "Helped with".
 - Extract or infer a professional summary that is 2-4 sentences, keyword-rich, and outcome-focused. Include years of experience and domain if evident.
-- Extract ALL relevant projects: side projects, open source, coursework, hackathons, or work projects. For each project include a short title and a 1-2 sentence description with technologies and impact.
+- Extract ALL relevant projects: side projects, open source, coursework, hackathons, or work projects. For each project include a short title, a 1-2 sentence description, and a "bullets" array with at least 3 bullet points (action verb, technologies, outcome). Do not output only description—always include 3+ bullets per project.
 - Skills: list 8-15 concrete skills (technologies, tools, methods). Pull from the job description when tailoring.
 - When ONLY a job description is provided (no candidate content), generate a resume template: infer job title, 5-12 skills from the description, a strong summary, 1-2 placeholder experience entries with ATS-style bullet placeholders, and 0-2 placeholder projects.
 
-OUTPUT: Valid JSON matching the schema. Use empty string for missing fields. Dates: short form like "Jan 2022" or "2020". Include a "projects" array with objects { "title": string, "description": string } when the source mentions projects, coursework, or side work.`;
+OUTPUT: Valid JSON matching the schema. Use empty string for missing fields. Dates: short form like "Jan 2022" or "2020". Include a "projects" array with objects { "title": string, "description": string, "bullets": string[] }—each project must have at least 3 bullets.`;
 
 const JOB_ONLY_SYSTEM = `You are an expert resume builder and ATS specialist. Given ONLY a job description, generate a structured resume template that a candidate can fill in. Output must be ATS-friendly and impact-oriented.
 
@@ -115,13 +115,27 @@ export async function extractResume(params: {
   }));
   if (education.length === 0) education.push(createEmptyEducation(crypto.randomUUID?.() ?? "edu-0"));
 
-  const projectsList = (object as { projects?: { title?: string; description?: string }[] }).projects ?? [];
+  const projectsList = (object as { projects?: { title?: string; description?: string; bullets?: string[] }[] }).projects ?? [];
   const projects = projectsList.length
-    ? projectsList.map((p: { title?: string; description?: string }, i: number) => ({
-        ...createEmptyProject(crypto.randomUUID?.() ?? `proj-${i}`),
-        title: p?.title ?? "",
-        description: p?.description ?? "",
-      }))
+    ? projectsList.map((p: { title?: string; description?: string; bullets?: string[] }, i: number) => {
+        const rawBullets = Array.isArray(p?.bullets) ? p.bullets.filter(Boolean) : [];
+        const desc = p?.description ?? "";
+        const title = p?.title ?? "";
+        let bullets = rawBullets.length >= 3 ? rawBullets : [...rawBullets];
+        if (bullets.length < 3 && desc) {
+          const parts = desc.split(/[.;]\s+/).filter(Boolean);
+          while (bullets.length < 3 && parts.length > 0) bullets.push(parts.shift()!.trim());
+          while (bullets.length < 3) bullets.push(desc);
+        } else if (bullets.length < 3) {
+          while (bullets.length < 3) bullets.push(desc || "Key contribution and outcome.");
+        }
+        return {
+          ...createEmptyProject(crypto.randomUUID?.() ?? `proj-${i}`),
+          title,
+          description: desc,
+          bullets: bullets.length > 0 ? bullets.slice(0, 8) : (desc ? [desc] : []),
+        };
+      })
     : [createEmptyProject(crypto.randomUUID?.() ?? "proj-0")];
 
   const resume: ResumeData = {
