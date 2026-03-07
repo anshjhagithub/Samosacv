@@ -26,14 +26,10 @@ export async function POST(request: Request) {
   const jwt = request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "").trim();
   const generationToken = request.headers.get("X-Generation-Token")?.trim();
 
-  if (!jwt) {
-    return NextResponse.json(
-      { error: "Sign in required", code: "UNAUTHORIZED" },
-      { status: 401 }
-    );
-  }
+  // Allow unauthenticated generation (sign-in required only at pay/download in builder)
+  const isAuthenticated = !!jwt;
 
-  if (ENFORCE_LIMITS && generationToken) {
+  if (isAuthenticated && ENFORCE_LIMITS && generationToken) {
     const valid = await validateToken(jwt, generationToken);
     if ("error" in valid) {
       return NextResponse.json(
@@ -109,7 +105,7 @@ export async function POST(request: Request) {
 
     const tokensUsed = (usage?.promptTokens ?? 0) + (usage?.completionTokens ?? 0);
     const apiCostPaiseVal = usage ? apiCostPaise(usage.promptTokens, usage.completionTokens) : 0;
-    if (ENFORCE_LIMITS && generationToken) {
+    if (ENFORCE_LIMITS && generationToken && isAuthenticated) {
       await confirmGeneration(generationToken, {
         success: true,
         tokens_used: tokensUsed,
@@ -126,7 +122,7 @@ export async function POST(request: Request) {
       roleTopSkills: roleIntel?.top_skills.slice(0, 15).map((s) => s.skill) ?? [],
     });
   } catch (err) {
-    if (ENFORCE_LIMITS && generationToken) {
+    if (ENFORCE_LIMITS && generationToken && isAuthenticated) {
       await confirmGeneration(generationToken, { success: false });
     }
     console.error("Generate-from-minimal error:", err);

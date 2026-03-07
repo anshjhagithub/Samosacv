@@ -59,27 +59,26 @@ export default function ResumeProjectsPage() {
 
     const supabase = createClient();
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) {
-      setBuildError("Please sign in to generate your resume.");
-      return;
-    }
 
     setBuilding(true);
     try {
-      const authHeaders = { Authorization: `Bearer ${session.access_token}` };
+      const authHeaders: Record<string, string> = { "Content-Type": "application/json" };
       let generationToken: string | null = null;
-      const allocateRes = await fetch("/api/allocate", { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders }, body: JSON.stringify({}) });
-      if (allocateRes.ok) {
-        const allocateData = await allocateRes.json();
-        generationToken = allocateData.token ?? null;
-      }
-      if (allocateRes.status === 402) {
-        setBuildError("Payment required to generate. Please complete payment and try again.");
-        return;
-      }
 
-      const headers: Record<string, string> = { "Content-Type": "application/json", ...authHeaders };
-      if (generationToken) headers["X-Generation-Token"] = generationToken;
+      if (session?.access_token) {
+        authHeaders.Authorization = `Bearer ${session.access_token}`;
+        const allocateRes = await fetch("/api/allocate", { method: "POST", headers: authHeaders, body: JSON.stringify({}) });
+        if (allocateRes.ok) {
+          const allocateData = await allocateRes.json();
+          generationToken = allocateData.token ?? null;
+        }
+        if (allocateRes.status === 402) {
+          setBuildError("Payment required to generate. Please complete payment and try again.");
+          setBuilding(false);
+          return;
+        }
+      }
+      if (generationToken) authHeaders["X-Generation-Token"] = generationToken;
 
       const payload = {
         fullName: basic.fullName,
@@ -96,7 +95,7 @@ export default function ResumeProjectsPage() {
 
       const res = await fetch("/api/resume/generate-from-minimal", {
         method: "POST",
-        headers,
+        headers: authHeaders,
         body: JSON.stringify(payload),
       });
 
@@ -108,14 +107,17 @@ export default function ResumeProjectsPage() {
 
       if (res.status === 401) {
         setBuildError("Please sign in again.");
+        setBuilding(false);
         return;
       }
       if (res.status === 402) {
         setBuildError(data.message || data.error || "Payment required to generate.");
+        setBuilding(false);
         return;
       }
       if (!res.ok) {
         setBuildError(data.error || "Failed to generate resume. Please try again.");
+        setBuilding(false);
         return;
       }
 
