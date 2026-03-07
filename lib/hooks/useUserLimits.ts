@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { UserLimitsData } from "@/lib/types/limits";
 
-const GET_LIMITS_FN = "get-limits";
+/** Client must only use this URL for limits (never call Supabase get-limits from the browser). */
+const LIMITS_API = "/api/limits";
 
 export interface UseUserLimitsResult {
   limits: UserLimitsData | null;
@@ -35,19 +36,16 @@ export function useUserLimits(): UseUserLimitsResult {
     setLoading(true);
     setError(null);
     try {
-      const { data, error: fnError } = await supabase.functions.invoke<UserLimitsData>(GET_LIMITS_FN);
-      if (fnError) {
-        setError(fnError.message ?? "Failed to load limits");
-        setLimits(null);
-        return;
-      }
+      const res = await fetch(LIMITS_API, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const data = await res.json().catch(() => null);
       if (data && typeof data === "object" && "free_generations_remaining" in data) {
-        setLimits(data);
+        setLimits(data as UserLimitsData);
       } else {
         setLimits(null);
       }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load limits");
+    } catch {
       setLimits(null);
     } finally {
       setLoading(false);

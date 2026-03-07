@@ -98,7 +98,7 @@ function CreatePageContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50/90 via-orange-50/50 to-amber-100/80" data-create-page="choice-upload">
+    <div className="min-h-screen bg-gradient-to-b from-amber-50/90 via-orange-50/50 to-amber-100/80" data-create-page="choice-upload" data-create-version="no-limits">
       <SiteHeader />
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-14">

@@ -94,7 +94,7 @@ export default function CreatePdfPage() {
             Upload PDF resume
           </h1>
           <p className="text-stone-600 text-sm">
-            We&apos;ll extract the text and open the builder — pay ₹5 when you download.
+            We&apos;ll extract the text and open the builder — pay ₹15 when you download.
           </p>
         </motion.div>
 

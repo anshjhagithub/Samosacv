@@ -24,10 +24,10 @@ export function ExperienceSelection({
 }: ExperienceSelectionProps) {
   return (
     <div className="max-w-2xl mx-auto">
-      <h1 className="text-3xl sm:text-4xl font-serif text-white text-center mb-2">
+      <h1 className="text-3xl sm:text-4xl font-serif text-stone-900 text-center mb-2">
         How much experience do you have?
       </h1>
-      <p className="text-gray-400 text-center text-sm sm:text-base mb-10">
+      <p className="text-stone-500 text-center text-sm sm:text-base mb-10">
         We&apos;ll tune your resume tone and emphasis to match.
       </p>
 
@@ -39,8 +39,8 @@ export function ExperienceSelection({
             onClick={() => onSelect(opt.id)}
             className="p-6"
           >
-            <h3 className="font-semibold text-white text-lg">{opt.label}</h3>
-            <p className="text-gray-400 text-sm mt-1">{opt.subtitle}</p>
+            <h3 className="font-semibold text-stone-900 text-lg">{opt.label}</h3>
+            <p className="text-stone-500 text-sm mt-1">{opt.subtitle}</p>
           </GlowSelectableCard>
         ))}
       </div>

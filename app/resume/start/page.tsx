@@ -115,7 +115,7 @@ export default function ResumeStartPage() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
             >
-              Two fields. AI handles the rest. ₹5 per resume.
+              Two fields. AI handles the rest. ₹15 per resume.
             </motion.p>
           </div>
 

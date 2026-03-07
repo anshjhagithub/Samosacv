@@ -51,8 +51,8 @@ const TESTIMONIALS = [
   { quote: "Clean templates, fast edits. The summary improvement actually sounds like me.", name: "James Okonkwo", role: "Analyst, Meta", image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=96&h=96&fit=crop&crop=face" },
   { quote: "Used it for my career switch. The AI knew exactly how to position transferable skills.", name: "Elena Rodriguez", role: "BA, Microsoft", image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=96&h=96&fit=crop&crop=face" },
   { quote: "Quality rivals a professional writer. Modern templates and context-aware AI.", name: "David Kim", role: "EM, Netflix", image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=96&h=96&fit=crop&crop=face" },
-  { quote: "Best investment for my career. Spent \u20B95 and got 4 interview calls in a week.", name: "Priya Sharma", role: "Data Analyst, Flipkart", image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=96&h=96&fit=crop&crop=face" },
-  { quote: "I was skeptical at \u20B95 but the AI-generated resume was better than my \u20B92000 one.", name: "Rahul Verma", role: "SDE, Amazon", image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=96&h=96&fit=crop&crop=face" },
+  { quote: "Best investment for my career. Spent \u20B915 and got 4 interview calls in a week.", name: "Priya Sharma", role: "Data Analyst, Flipkart", image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=96&h=96&fit=crop&crop=face" },
+  { quote: "I was skeptical at \u20B915 but the AI-generated resume was better than my \u20B92000 one.", name: "Rahul Verma", role: "SDE, Amazon", image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=96&h=96&fit=crop&crop=face" },
   { quote: "Two fields. That\u2019s all it took. Got my resume in under a minute.", name: "Ananya Patel", role: "PM, Razorpay", image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=96&h=96&fit=crop&crop=face" },
 ];
 
@@ -80,7 +80,7 @@ const PAID_ADDONS = [
 ];
 
 const COMPARISON = [
-  { feature: "Price", us: "\u20B95 once", others: "\u20B9500+/mo" },
+  { feature: "Price", us: "\u20B915 once", others: "\u20B9500+/mo" },
   { feature: "Fields to start", us: "Just 2", others: "20+" },
   { feature: "Free ATS scoring", us: true, others: "Paid" },
   { feature: "Free skill suggestions", us: true, others: "No" },
@@ -95,7 +95,7 @@ const COMPARISON = [
 const FAQ_ITEMS = [
   { q: "Do I need an account?", a: "Yes, sign-up is required to create and track your resumes. Sign in with Google \u2014 it takes 2 seconds." },
   { q: "What do I get for free?", a: "ATS scoring, skill gap analysis, bullet suggestions, 82 role presets, 35+ template previews, and role intelligence \u2014 all completely free, no sign-up needed." },
-  { q: "Why is it only \u20B95?", a: "We use efficient AI models and have no subscription overhead. You pay only when you generate an AI-powered resume. No recurring fees, no hidden charges." },
+  { q: "Why is it only \u20B915?", a: "We use efficient AI models and have no subscription overhead. You pay only when you generate an AI-powered resume. No recurring fees, no hidden charges." },
   { q: "Can I use my existing resume?", a: "Yes. Upload PDF or paste LinkedIn text. Our AI extracts and rewrites with impact-driven language." },
   { q: "How does job matching work?", a: "Paste any job posting. AI analyzes requirements, matches your experience, and generates tailored content with ATS keywords." },
   { q: "Can I switch templates?", a: "Anytime. Switch between 35+ templates in the builder. Your content stays \u2014 only design changes." },
@@ -244,17 +244,17 @@ export default function Home() {
               <motion.div variants={stagger} initial="hidden" animate="show">
                 <motion.div variants={fadeUp} className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-white/80 backdrop-blur-sm px-4 py-1.5 mb-5">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                  <span className="text-xs text-amber-800 font-semibold">&#x20B9;5 per resume &middot; No subscription</span>
+                  <span className="text-xs text-amber-800 font-semibold">&#x20B9;15 per resume &middot; No subscription</span>
                 </motion.div>
                 <motion.h1 variants={fadeUp} className="text-3xl sm:text-4xl lg:text-[3.25rem] font-bold text-stone-900 tracking-tight leading-[1.15]">
-                  AI resume in 60 seconds. <span className="text-amber-700">Just &#x20B9;5.</span>
+                  AI resume in 60 seconds. <span className="text-amber-700">Just &#x20B9;15.</span>
                 </motion.h1>
                 <motion.p variants={fadeUp} className="mt-4 text-stone-600 max-w-md text-base sm:text-lg leading-relaxed">
                   Enter your name and target role. AI handles the rest. Free ATS scoring, skill analysis, and 82 role presets included.
                 </motion.p>
                 <motion.div variants={fadeUp} className="mt-7 flex flex-wrap items-center gap-3">
                   <Link href="/create" className="touch-target relative inline-flex items-center justify-center rounded-xl bg-amber-600 px-7 py-3.5 min-h-[48px] text-sm font-semibold text-white shadow-lg shadow-amber-900/20 hover:bg-amber-700 transition-all hover:-translate-y-0.5 btn-shine overflow-hidden">
-                    Create my resume &mdash; &#x20B9;5
+                    Create my resume &mdash; &#x20B9;15
                   </Link>
                   <a href="#free-features" className="touch-target inline-flex items-center justify-center rounded-xl border-2 border-emerald-300 bg-emerald-50/80 px-7 py-3.5 min-h-[48px] text-sm font-medium text-emerald-800 hover:bg-emerald-100 transition-all">
                     What&apos;s free?
@@ -303,11 +303,11 @@ export default function Home() {
                     <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center mb-5 shadow-md shadow-amber-500/30">
                       <span className="text-2xl font-black text-white">&#x20B9;</span>
                     </div>
-                    <h3 className="text-xl font-bold text-stone-900 mb-2">&#x20B9;5. No subscription.</h3>
-                    <p className="text-stone-600 text-sm leading-relaxed mb-4">Others charge &#x20B9;500+/month for AI resumes. We charge &#x20B9;5. Once. No recurring fees. No hidden charges. No trial that expires.</p>
+                    <h3 className="text-xl font-bold text-stone-900 mb-2">&#x20B9;15. No subscription.</h3>
+                    <p className="text-stone-600 text-sm leading-relaxed mb-4">Others charge &#x20B9;500+/month for AI resumes. We charge &#x20B9;15. Once. No recurring fees. No hidden charges. No trial that expires.</p>
                     <div className="flex items-center gap-3 pt-4 border-t border-amber-200/50">
                       <div className="flex items-baseline gap-1">
-                        <span className="text-4xl font-black text-amber-700">&#x20B9;5</span>
+                        <span className="text-4xl font-black text-amber-700">&#x20B9;15</span>
                         <span className="text-stone-500 text-sm line-through">&#x20B9;500</span>
                       </div>
                       <span className="ml-auto inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">99% cheaper</span>
@@ -470,7 +470,7 @@ export default function Home() {
                 </div>
               </motion.div>
 
-              {/* Per resume — ₹5 */}
+              {/* Per resume — ₹15 */}
               <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.08 }} className="relative rounded-2xl border-2 border-amber-400 bg-gradient-to-br from-amber-50 via-white to-amber-50/30 p-6 shadow-lg shadow-amber-200/30">
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                   <span className="inline-flex items-center px-3 py-1 rounded-full bg-amber-600 text-white text-[10px] font-bold uppercase tracking-wider shadow-md">Most popular</span>
@@ -479,7 +479,7 @@ export default function Home() {
                   <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold uppercase tracking-wider">Per resume</span>
                 </div>
                 <div className="flex items-baseline gap-1.5 mb-1">
-                  <span className="text-4xl font-black text-amber-700">&#x20B9;5</span>
+                  <span className="text-4xl font-black text-amber-700">&#x20B9;15</span>
                   <span className="text-sm text-stone-400">/ resume</span>
                 </div>
                 <p className="text-xs text-stone-500 mb-5">AI generation + PDF download included. One price, no surprises.</p>
@@ -503,7 +503,7 @@ export default function Home() {
                   </div>
                 </div>
                 <Link href="/create" className="mt-5 w-full relative inline-flex items-center justify-center rounded-xl bg-amber-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-amber-900/20 hover:bg-amber-700 transition-all hover:-translate-y-0.5 btn-shine overflow-hidden">
-                  Get started &mdash; &#x20B9;5
+                  Get started &mdash; &#x20B9;15
                 </Link>
               </motion.div>
 
@@ -517,12 +517,12 @@ export default function Home() {
                 </div>
                 <div className="flex items-baseline gap-1.5 mb-1">
                   <span className="text-4xl font-black text-violet-700">&#x20B9;49</span>
-                  <span className="text-sm text-stone-400 line-through">&#x20B9;110</span>
+                  <span className="text-sm text-stone-400 line-through">&#x20B9;100</span>
                 </div>
-                <p className="text-xs text-stone-500 mb-5">11 AI resumes + ATS optimizer on every generation. Save 55%.</p>
+                <p className="text-xs text-stone-500 mb-5">5 AI resumes + ATS optimizer on every generation. Save 51%.</p>
                 <div className="space-y-2">
                   {[
-                    "11 AI resume generations",
+                    "5 AI resume generations",
                     "ATS Keyword Booster on each",
                     "PDF downloads included",
                     "All 35+ templates",
@@ -536,8 +536,8 @@ export default function Home() {
                 </div>
                 <div className="mt-5 pt-4 border-t border-violet-200/60">
                   <div className="rounded-lg bg-violet-100/80 border border-violet-200 p-3 text-center">
-                    <p className="text-xs text-violet-800 font-semibold">&#x20B9;4.45/resume vs &#x20B9;10/resume individually</p>
-                    <p className="text-[10px] text-violet-600 mt-0.5">You save &#x20B9;61 with the bundle</p>
+                    <p className="text-xs text-violet-800 font-semibold">&#x20B9;9.8/resume vs &#x20B9;20/resume individually</p>
+                    <p className="text-[10px] text-violet-600 mt-0.5">You save &#x20B9;51 with the bundle</p>
                   </div>
                 </div>
                 <Link href="/pricing" className="mt-5 w-full relative inline-flex items-center justify-center rounded-xl bg-violet-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-900/20 hover:bg-violet-700 transition-all hover:-translate-y-0.5 overflow-hidden">
@@ -719,7 +719,7 @@ export default function Home() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
               {[
                 { num: "50K+", label: "Resumes created" },
-                { num: "&#x20B9;5", label: "Per resume" },
+                { num: "&#x20B9;15", label: "Per resume" },
                 { num: "82", label: "Role presets (free)" },
                 { num: "6", label: "Free tools included" },
               ].map((s, i) => (
@@ -737,10 +737,10 @@ export default function Home() {
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-amber-200/20 rounded-full blur-[120px] pointer-events-none" aria-hidden />
           <div className="max-w-3xl mx-auto px-4 sm:px-6 relative text-center">
             <motion.h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-stone-900" initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-              &#x20B9;5. One resume. Real results.
+              &#x20B9;15. One resume. Real results.
             </motion.h2>
             <motion.p className="mt-3 text-stone-600 text-base max-w-lg mx-auto" initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}>
-              Free ATS scoring, skill analysis, bullet suggestions, and 82 role presets. Pay &#x20B9;5 only when you&apos;re ready for AI generation.
+              Free ATS scoring, skill analysis, bullet suggestions, and 82 role presets. Pay &#x20B9;15 only when you&apos;re ready for AI generation.
             </motion.p>
             <motion.div className="mt-4 flex -space-x-2 justify-center" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.15 }}>
               {TESTIMONIALS.slice(0, 6).map((t, i) => (
@@ -754,7 +754,7 @@ export default function Home() {
             </motion.div>
             <motion.div className="mt-7 flex flex-col sm:flex-row items-center justify-center gap-4" initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }}>
               <Link href="/create" className="relative inline-flex items-center justify-center rounded-xl bg-amber-600 px-8 py-4 text-base font-semibold text-white shadow-lg shadow-amber-900/20 hover:bg-amber-700 transition-all hover:-translate-y-0.5 btn-shine overflow-hidden">
-                Create my resume &mdash; &#x20B9;5
+                Create my resume &mdash; &#x20B9;15
               </Link>
               <Link href="/pricing" className="inline-flex items-center justify-center rounded-xl border-2 border-stone-300 bg-white/80 px-8 py-4 text-base font-medium text-stone-700 hover:bg-stone-50 transition-all">
                 See pricing

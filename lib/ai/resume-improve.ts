@@ -3,7 +3,7 @@ import { getModel, resolveModelOptions } from "./model";
 
 export async function improveResumeText(params: {
   text: string;
-  prompt: "improve_bullet" | "improve_summary" | "suggest_bullets";
+  prompt: "improve_bullet" | "improve_summary" | "suggest_bullets" | "improve_project";
   context?: string;
   apiKey?: string | null;
 }): Promise<string> {
@@ -18,6 +18,8 @@ export async function improveResumeText(params: {
       "Rewrite this professional summary to be more compelling and concise (2-4 sentences). Return only the new summary, no explanation.",
     suggest_bullets:
       "Suggest 3 resume bullet points for this role/company. Each on a new line, starting with a strong action verb. Return only the 3 bullets, one per line, no numbering or explanation.",
+    improve_project:
+      "Rewrite this project description to be more impactful and concise. Use strong action verbs and quantify impact where possible. Keep 2-4 sentences. Return only the new description, no explanation.",
   };
 
   const userMessage = context

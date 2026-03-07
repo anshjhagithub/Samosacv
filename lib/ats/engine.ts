@@ -180,12 +180,16 @@ export function scoreResume(resumeText: string, targetRole: string): ATSScoreRes
   if (!roleIntel) {
     breakdown.quantificationScore = scoreQuantification(resumeText);
     breakdown.structureScore = scoreStructure(resumeText);
-    const final =
+    // Always use same formula: weighted sum of all 6 (zeros for missing role data)
+    const finalScore =
+      breakdown.skillMatch * WEIGHTS.skillMatch +
+      breakdown.keywordDensity * WEIGHTS.keywordDensity +
+      breakdown.actionVerbUsage * WEIGHTS.actionVerbUsage +
       breakdown.quantificationScore * WEIGHTS.quantificationScore +
-      breakdown.structureScore * WEIGHTS.structureScore;
-    const scale = WEIGHTS.quantificationScore + WEIGHTS.structureScore;
+      breakdown.structureScore * WEIGHTS.structureScore +
+      breakdown.experienceAlignment * WEIGHTS.experienceAlignment;
     return {
-      finalScore: Math.round((final / scale) * 100),
+      finalScore: Math.round(Math.min(100, Math.max(0, finalScore))),
       breakdown,
       missingSkills: [],
     };

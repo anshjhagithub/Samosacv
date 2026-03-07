@@ -25,8 +25,8 @@ export function GlowSelectableCard({
       className={`
         w-full rounded-2xl border text-left transition-all duration-200
         ${selected
-          ? "border-accent bg-accent/10 shadow-glow"
-          : "border-[#2d2640] bg-[#16121f] hover:border-accent/30 hover:shadow-card"
+          ? "border-amber-400 bg-amber-50 shadow-md shadow-amber-900/5 ring-2 ring-amber-200/50"
+          : "border-stone-200 bg-white hover:border-stone-300 hover:shadow-card"
         }
         ${className}
       `}

@@ -62,6 +62,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing customer_id" }, { status: 400 });
     }
 
+    // Mark order as paid
     const { error: orderUpdateError } = await supabase
       .from("orders")
       .update({
@@ -75,6 +76,7 @@ export async function POST(request: Request) {
       console.error("Order update failed:", orderUpdateError);
     }
 
+    // Handle regeneration orders (₹2)
     const isRegenOrder = orderId.startsWith("regen_");
     if (isRegenOrder) {
       const parts = orderId.split("_");
@@ -90,6 +92,22 @@ export async function POST(request: Request) {
       }
     }
 
+    // Handle builder improve orders (₹1)
+    const isImproveOrder = orderId.startsWith("improve_");
+    if (isImproveOrder) {
+      const parts = orderId.split("_");
+      const uid = parts[1];
+      const feature_type = parts[2] === "summary" && parts[3] === "improve" ? "summary_improve" : parts[2] === "project" && parts[3] === "improve" ? "project_improve" : null;
+      if (uid && feature_type) {
+        await supabase.from("improve_credits").insert({
+          user_id: uid,
+          feature_type,
+          order_id: orderId,
+        });
+      }
+    }
+
+    // Update profile subscription status
     const { error: upsertError } = await supabase.from("profiles").upsert(
       {
         id: userId,
@@ -105,7 +123,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: upsertError.message }, { status: 500 });
     }
   }
-
 
   return NextResponse.json({ received: true }, { status: 200 });
 }

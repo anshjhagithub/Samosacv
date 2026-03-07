@@ -12,7 +12,7 @@ import { TEMPLATE_DISPLAY } from "@/lib/templateCategories";
 import { SamosaLogoFull } from "@/components/brand/SamosaLogo";
 
 const RESUME_W = 794;
-const MIN_SCALE = 0.72; // Zoomed for readability (EnhanceCV-style)
+/** Match homescreen TemplateShowcase: scale to fit container (thumbnail-style previews). */
 
 export default function TemplateSelectPage() {
   const router = useRouter();
@@ -67,8 +67,8 @@ export default function TemplateSelectPage() {
           </Link>
         </div>
 
-        {/* Full-width grid: 3 templates per row, zoomed and readable */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">
+        {/* Same grid and card style as homescreen TemplateShowcase: thumbnail previews */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
           {TEMPLATE_IDS.map((id, i) => (
             <TemplateFlowCard
               key={id}
@@ -76,7 +76,6 @@ export default function TemplateSelectPage() {
               isSelected={selected === id}
               onSelect={() => setSelected(id)}
               index={i}
-              minScale={MIN_SCALE}
             />
           ))}
         </div>
@@ -85,11 +84,11 @@ export default function TemplateSelectPage() {
   );
 }
 
-function TemplateFlowCard({ templateId, isSelected, onSelect, index, minScale = 0.4 }: { templateId: TemplateId; isSelected: boolean; onSelect: () => void; index: number; minScale?: number }) {
+function TemplateFlowCard({ templateId, isSelected, onSelect, index }: { templateId: TemplateId; isSelected: boolean; onSelect: () => void; index: number }) {
   const sampleData = useMemo(() => getSampleResumeData(templateId), [templateId]);
   const display = TEMPLATE_DISPLAY[templateId];
   const containerRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(minScale);
+  const [scale, setScale] = useState(0.45);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -97,46 +96,58 @@ function TemplateFlowCard({ templateId, isSelected, onSelect, index, minScale = 
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const w = entry.contentRect.width;
-        setScale(Math.max(minScale, w / RESUME_W));
+        if (w > 0) setScale(w / RESUME_W);
       }
     });
     observer.observe(el);
     return () => observer.disconnect();
-  }, [minScale]);
+  }, []);
 
   return (
-    <motion.button
-      type="button"
-      onClick={onSelect}
-      initial={{ opacity: 0, y: 12 }}
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: Math.min(index * 0.02, 0.3) }}
-      className={`group relative rounded-2xl overflow-hidden text-left transition-all duration-200 ${
-        isSelected
-          ? "ring-2 ring-amber-500 ring-offset-2 shadow-xl"
-          : "border border-stone-200 shadow-md hover:shadow-lg hover:border-amber-200"
-      }`}
+      transition={{ delay: Math.min(index * 0.06, 0.4), duration: 0.5 }}
     >
-      <div ref={containerRef} className="relative overflow-hidden bg-white w-full min-h-[480px] sm:min-h-[560px]" style={{ aspectRatio: "210 / 297" }}>
-        <div
-          className="absolute top-0 left-0 origin-top-left"
-          style={{ transform: `scale(${scale})`, width: RESUME_W, minHeight: 1123 }}
-        >
-          <ResumePreview data={{ ...sampleData, templateId }} />
-        </div>
-        {display?.badge && (
-          <div className="absolute top-2 left-2 z-10 rounded-md bg-amber-600 text-white text-[10px] font-bold px-2 py-0.5 shadow">{display.badge}</div>
-        )}
-        {isSelected && (
-          <div className="absolute top-2 right-2 z-10 w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center shadow-lg">
-            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+      <button
+        type="button"
+        onClick={onSelect}
+        className={`group relative block w-full text-left rounded-xl border bg-white overflow-hidden transition-all duration-300 shadow-md ${
+          isSelected
+            ? "ring-2 ring-amber-500 ring-offset-2 shadow-xl border-amber-300"
+            : "border-stone-200 hover:border-amber-300 hover:shadow-xl hover:scale-[1.01]"
+        }`}
+      >
+        <div ref={containerRef} className="relative overflow-hidden" style={{ aspectRatio: "210 / 297" }}>
+          <div
+            className="absolute top-0 left-0 origin-top-left"
+            style={{ transform: `scale(${scale})`, width: RESUME_W, minHeight: 1123 }}
+          >
+            <ResumePreview data={{ ...sampleData, templateId }} />
           </div>
-        )}
-      </div>
-      <div className="px-4 py-3 bg-white border-t border-stone-100">
-        <p className={`text-base font-semibold truncate ${isSelected ? "text-amber-800" : "text-stone-900"}`}>{display?.name ?? templateId}</p>
-        <p className="text-xs text-stone-500 truncate">{display?.subtitle ?? "ATS-friendly"}</p>
-      </div>
-    </motion.button>
+          {display?.badge && (
+            <div className="absolute top-2 left-2 z-10 rounded-md bg-amber-600 text-white text-[10px] font-bold px-2 py-0.5 shadow">
+              {display.badge}
+            </div>
+          )}
+          {isSelected && (
+            <div className="absolute top-2 right-2 z-10 w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center shadow-lg">
+              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+            </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-6 z-10 pointer-events-none">
+            <span className="rounded-lg bg-amber-600 text-white text-sm font-semibold px-5 py-2.5 shadow-lg translate-y-2 group-hover:translate-y-0 transition-transform">
+              Use this template
+            </span>
+          </div>
+        </div>
+        <div className="px-4 py-3 border-t border-stone-100">
+          <p className={`text-sm font-semibold truncate ${isSelected ? "text-amber-800" : "text-stone-900 group-hover:text-amber-800"}`}>
+            {display?.name ?? templateId}
+          </p>
+          <p className="text-xs text-stone-500 truncate">{display?.subtitle ?? "ATS-friendly"}</p>
+        </div>
+      </button>
+    </motion.div>
   );
 }

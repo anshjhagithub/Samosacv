@@ -108,14 +108,15 @@ export function ClassicResume({ data }: { data: ResumeData }) {
             {projects.filter((p) => p.title || p.description || (p.bullets && p.bullets.length)).map((proj) => (
               <div key={proj.id} className="mb-2">
                 <span className="font-bold text-gray-900">{proj.title || "Project"}</span>
+                {proj.description ? (
+                  <p className="text-gray-700 mt-0.5 leading-[1.45]">{proj.description}</p>
+                ) : null}
                 {proj.bullets && proj.bullets.length > 0 ? (
                   <ul className="text-gray-700 mt-0.5 leading-[1.45] list-disc pl-4 space-y-0.5 text-[11px]">
                     {proj.bullets.map((b, i) => (
                       <li key={i}>{b}</li>
                     ))}
                   </ul>
-                ) : proj.description ? (
-                  <p className="text-gray-700 mt-0.5 leading-[1.45]">{proj.description}</p>
                 ) : null}
               </div>
             ))}

@@ -97,7 +97,7 @@ export function LoginModal({ open, onClose, redirectAfterLogin = "/builder" }: L
                 onClick={onClose}
                 className="w-full rounded-xl bg-amber-600 px-6 py-3.5 text-sm font-semibold text-white hover:bg-amber-700 transition-all shadow-md shadow-amber-900/20"
               >
-                Pay &#x20B9;5 to unlock resume
+                Pay &#x20B9;15 to unlock resume
               </button>
 
               <p className="text-center text-xs text-stone-400 leading-relaxed">

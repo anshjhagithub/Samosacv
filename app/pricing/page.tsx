@@ -9,7 +9,7 @@ import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 
 const ADDONS = [
-  { name: "Resume Generation", price: 5, desc: "AI builds your resume from scratch", popular: true },
+  { name: "Resume Generation", price: 15, desc: "AI builds your resume from scratch", popular: true },
   { name: "ATS Optimizer", price: 5, desc: "Score 90+ and pass every filter", popular: true },
   { name: "Mock Interview Qs", price: 6, desc: "Role-specific questions + ideal answers" },
   { name: "Cover Letter", price: 5, desc: "Tailored cover letter for any job" },
@@ -70,7 +70,7 @@ export default function PricingPage() {
           <div className="mb-6 rounded-xl bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm text-center">{payError}</div>
         )}
 
-        {/* Hero card - ₹5 per resume */}
+        {/* Hero card - ₹15 per resume */}
         <motion.section
           className="mb-12"
           initial={{ opacity: 0, y: 16 }}
@@ -82,7 +82,7 @@ export default function PricingPage() {
             <div className="absolute -top-20 -right-20 w-40 h-40 bg-amber-200/20 rounded-full blur-3xl" aria-hidden />
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-700 mb-3">Our core promise</p>
             <div className="flex items-baseline justify-center gap-1 mb-2">
-              <span className="text-6xl sm:text-7xl font-black text-stone-900">₹5</span>
+              <span className="text-6xl sm:text-7xl font-black text-stone-900">₹15</span>
               <span className="text-lg text-stone-500 font-medium">/ resume</span>
             </div>
             <p className="text-stone-600 text-base max-w-md mx-auto mb-6">One AI-generated, ATS-ready resume. Professional templates. Role-specific content. That&apos;s it.</p>
@@ -140,10 +140,10 @@ export default function PricingPage() {
             <div className="grid sm:grid-cols-2 gap-6 items-center">
               <div>
                 <h2 className="text-2xl font-bold text-stone-900 mb-2">Premium Bundle — ₹49</h2>
-                <p className="text-stone-600 text-sm mb-4">11 resume generations + ATS optimizer included with every generation. One-time payment.</p>
+                <p className="text-stone-600 text-sm mb-4">5 resume generations + ATS optimizer included with every generation. One-time payment.</p>
                 <div className="space-y-1.5 mb-4">
                   <div className="flex items-center gap-2 text-sm text-stone-600">
-                    <span className="text-amber-600">✓</span> 11 premium AI generations
+                    <span className="text-amber-600">✓</span> 5 premium AI generations
                   </div>
                   <div className="flex items-center gap-2 text-sm text-stone-600">
                     <span className="text-amber-600">✓</span> ATS optimizer included (worth ₹55)
@@ -152,12 +152,12 @@ export default function PricingPage() {
                     <span className="text-amber-600">✓</span> Higher-quality AI model
                   </div>
                   <div className="flex items-center gap-2 text-sm text-stone-600">
-                    <span className="text-amber-600">✓</span> After 11: just ₹5 per generation
+                    <span className="text-amber-600">✓</span> After 5: just ₹15 per generation
                   </div>
                 </div>
                 <div className="flex items-center gap-3 text-xs text-stone-500 mb-4">
-                  <span className="line-through">11 × ₹5 gen + 11 × ₹5 ATS = ₹110</span>
-                  <span className="text-amber-700 font-bold text-sm">You pay ₹49 — save 55%</span>
+                  <span className="line-through">5 × ₹15 gen + 5 × ₹5 ATS = ₹100</span>
+                  <span className="text-amber-700 font-bold text-sm">You pay ₹49 — save 51%</span>
                 </div>
               </div>
               <div className="text-center sm:text-right">

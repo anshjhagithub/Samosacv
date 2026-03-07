@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node -e \"try{require('fs').rmSync('.next',{recursive:true})}catch(e){}\" && next dev",
+    "dev:no-clear": "next dev",
+    "dev:fresh": "node -e \"try{require('fs').rmSync('.next',{recursive:true})}catch(e){}\" && next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -30,13 +32,13 @@
     "pdf-parse": "^2.4.5",
     "pdf2json": "^4.0.2",
     "pdfjs-dist": "^5.4.624",
+    "playwright": "^1.58.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "uuid": "^10.0.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "tsx": "^4.19.2",
     "@types/file-saver": "^2.0.7",
     "@types/node": "^20",
     "@types/react": "^18",
@@ -47,6 +49,7 @@
     "eslint-config-next": "14.2.18",
     "postcss": "^8",
     "tailwindcss": "^3.4.0",
+    "tsx": "^4.19.2",
     "typescript": "^5"
   }
 }

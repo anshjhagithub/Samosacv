@@ -61,10 +61,10 @@ export function getAddonCount(cart: CartState): number {
 
 export function getLineItemsForOrder(cart: CartState): Record<string, boolean> {
   const items: Record<string, boolean> = {};
-  if (cart[BASE_PRODUCT]) items[BASE_PRODUCT] = true;
-  for (const slug of ADDON_SLUGS) {
+  for (const slug of Object.keys(cart) as FeatureSlug[]) {
     if (cart[slug]) items[slug] = true;
   }
+  if (Object.keys(items).length === 0 && BASE_PRODUCT) items[BASE_PRODUCT] = true;
   return items;
 }
 

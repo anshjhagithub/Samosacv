@@ -6,7 +6,7 @@ const corsHeaders = {
 };
 
 const PREMIUM_PACK_AMOUNT_PAISE = 4900; // ₹49
-const PREMIUM_PACK_GENERATIONS = 6;
+const PREMIUM_PACK_GENERATIONS = 5;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
         JSON.stringify({
           ok: true,
           premium_generations_added: PREMIUM_PACK_GENERATIONS,
-          message: "₹49 pack applied. You have 6 premium generations.",
+          message: "₹49 pack applied. You have 5 premium generations.",
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );

@@ -114,14 +114,15 @@ export function ThemedResume({
               <span className={`font-semibold text-gray-900 ${headingFont}`}>
                 {proj.title || "Project"}
               </span>
+              {proj.description ? (
+                <p className={`text-gray-700 ${textSize} mt-0.5`}>{proj.description}</p>
+              ) : null}
               {proj.bullets && proj.bullets.length > 0 ? (
                 <ul className={`text-gray-700 ${textSize} mt-0.5 list-disc pl-4 space-y-0.5`}>
                   {proj.bullets.map((b, i) => (
                     <li key={i}>{b}</li>
                   ))}
                 </ul>
-              ) : proj.description ? (
-                <p className={`text-gray-700 ${textSize} mt-0.5`}>{proj.description}</p>
               ) : null}
             </div>
           ))}

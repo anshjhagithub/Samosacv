@@ -18,9 +18,9 @@ yarn-error.log*
 
 # Secrets (do not commit)
 .env
+.linkedin-cookies.json
 apikeys.txt
 client_id_secret.txt
-
 # Local env
 .env
 .env.local
@@ -44,3 +44,8 @@ next-env.d.ts
 # OS
 .DS_Store
 Thumbs.db
+
+# Large dataset files (keep locally; avoid push timeouts)
+data/*.csv
+data/*.txt
+data/cleaned_resumes.json

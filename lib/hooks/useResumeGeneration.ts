@@ -5,9 +5,6 @@ import { createClient } from "@/lib/supabase/client";
 import type { PaymentRequiredCode } from "@/lib/types/limits";
 import type { UserLimitsData } from "@/lib/types/limits";
 
-/** Try these in order; first successful name wins. Match your Supabase deployment (folder name). */
-const GENERATE_RESUME_FN_NAMES = ["generate_resume", "check-allocate"];
-
 export type AllocateSuccess = { token: string; jwt: string };
 export type AllocateError =
   | { code: "UNAUTHORIZED"; message: string }
@@ -39,13 +36,13 @@ function inferPaymentCode(
 }
 
 /**
- * Allocates a generation via generate_resume edge function. On 402, sets paymentRequiredCode
- * from backend or infers from model + limits. Use supabase.functions.invoke; no localStorage.
+ * Allocates a generation via /api/allocate (proxies to Supabase Edge Function check-allocate).
+ * Avoids client-side "Failed to send a request to the Edge Function" by calling our API instead.
  */
 export function useResumeGeneration(
   options: UseResumeGenerationOptions
 ): UseResumeGenerationResult {
-  const { onSuccess, limits } = options;
+  const { limits } = options;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paymentRequiredCode, setPaymentRequiredCode] = useState<PaymentRequiredCode | null>(null);
@@ -68,67 +65,49 @@ export function useResumeGeneration(
       setError(null);
       setPaymentRequiredCode(null);
 
-      const supabaseUrl = typeof process !== "undefined" && process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-      if (!supabaseUrl) {
-        setError("Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL to your environment.");
-        setLoading(false);
-        return { code: "UNKNOWN", message: "Supabase is not configured." };
-      }
-
       try {
-        let data: unknown = null;
-        let fnError: unknown = null;
-        for (const fnName of GENERATE_RESUME_FN_NAMES) {
-          const result = await supabase.functions.invoke<{
-            token?: string;
-            code?: string;
-            message?: string;
-          }>(fnName, { body: { model } });
-          data = result.data;
-          fnError = result.error;
-          if (!result.error) break;
-          const msg = (result.error as { message?: string })?.message ?? "";
-          if (msg.includes("Failed to send a request") || msg.includes("fetch") || msg.includes("Network")) {
-            continue;
-          }
-          break;
+        const res = await fetch("/api/allocate", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ model }),
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (res.status === 401) {
+          const msg = data.error ?? "Please sign in to generate a resume.";
+          setError(msg);
+          return { code: "UNAUTHORIZED", message: msg };
         }
 
-        if (fnError) {
-          let code: PaymentRequiredCode = inferPaymentCode(model, limits);
-          let message = (fnError as { message?: string }).message ?? "Payment required";
-          const ctx = (fnError as { context?: Response }).context;
-          if (ctx && typeof (ctx as Response).json === "function") {
-            try {
-              const body = await (ctx as Response).json();
-              if (
-                body?.code === "FREE_LIMIT_REACHED" ||
-                body?.code === "PREMIUM_LOCKED" ||
-                body?.code === "INSUFFICIENT_FUNDS"
-              ) {
-                code = body.code;
-              }
-              if (body?.message) message = body.message;
-            } catch (_) {
-              /* use inferred code */
-            }
-          }
+        if (res.status === 402) {
+          const code: PaymentRequiredCode =
+            data.code === "FREE_LIMIT_REACHED" ||
+            data.code === "PREMIUM_LOCKED" ||
+            data.code === "INSUFFICIENT_FUNDS"
+              ? data.code
+              : inferPaymentCode(model, limits);
+          const message = data.message ?? data.error ?? "Payment required.";
           setPaymentRequiredCode(code);
           setError(message);
           return { code, message };
         }
 
-        const body = typeof data === "object" && data ? data : null;
-        if (body && typeof (body as { token?: string }).token === "string") {
-          const token = (body as { token: string }).token;
-          return { token, jwt: session.access_token };
+        if (res.status === 503 || !res.ok) {
+          const msg = data.error ?? "Generation service unavailable.";
+          setError(msg);
+          return { code: data.code ?? "UNKNOWN", message: msg };
         }
 
-        setError((body as { message?: string })?.message ?? "No token returned");
-        return {
-          code: "UNKNOWN",
-          message: (body as { message?: string })?.message ?? "No token returned",
-        };
+        if (data.token && typeof data.token === "string") {
+          return { token: data.token, jwt: session.access_token };
+        }
+
+        const fallback = data.message ?? data.error ?? "No token returned";
+        setError(fallback);
+        return { code: "UNKNOWN", message: fallback };
       } catch (e) {
         const msg = e instanceof Error ? e.message : "Could not start generation";
         setError(msg);

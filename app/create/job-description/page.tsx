@@ -93,7 +93,7 @@ export default function CreateJobDescriptionPage() {
             Create from job description
           </h1>
           <p className="text-stone-600 text-sm">
-            Paste a job posting. We&apos;ll generate a tailored resume — pay ₹5 when you download.
+            Paste a job posting. We&apos;ll generate a tailored resume — pay ₹15 when you download.
           </p>
         </motion.div>
 

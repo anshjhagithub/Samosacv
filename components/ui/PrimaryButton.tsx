@@ -27,11 +27,11 @@ export function PrimaryButton({
       whileHover={disabled ? undefined : { y: -1 }}
       whileTap={disabled ? undefined : { y: 0 }}
       className={`
-        rounded-2xl bg-accent px-6 py-3.5 font-semibold text-white
+        rounded-2xl bg-amber-600 px-6 py-3.5 font-semibold text-white
         transition-colors duration-200
-        hover:bg-accent/90
-        disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-accent
-        ${glow ? "shadow-glow hover:shadow-glow-lg" : ""}
+        hover:bg-amber-700
+        disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-amber-600
+        ${glow ? "shadow-md shadow-amber-900/10 hover:shadow-lg" : ""}
         ${className}
       `}
       disabled={disabled}

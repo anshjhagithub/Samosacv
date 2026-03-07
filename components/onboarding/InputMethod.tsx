@@ -57,14 +57,14 @@ export function InputMethod({
 }: InputMethodProps) {
   return (
     <div className="max-w-3xl mx-auto">
-      <h1 className="text-3xl sm:text-4xl font-serif text-white text-center mb-2">
+      <h1 className="text-3xl sm:text-4xl font-serif text-stone-900 text-center mb-2">
         Choose your starting point
       </h1>
-      <p className="text-gray-400 text-center text-sm sm:text-base mb-10">
+      <p className="text-stone-600 text-center text-sm sm:text-base mb-10">
         Import existing content or build from the ground up.
       </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
         {INPUT_OPTIONS.map((opt) => (
           <GlowSelectableCard
             key={opt.id}
@@ -73,8 +73,8 @@ export function InputMethod({
             className="p-6 flex flex-col items-center text-center"
           >
             <div className="mb-3">{opt.icon}</div>
-            <h3 className="font-semibold text-white">{opt.label}</h3>
-            <p className="text-gray-400 text-sm mt-1">{opt.description}</p>
+            <h3 className="font-semibold text-stone-900">{opt.label}</h3>
+            <p className="text-stone-500 text-sm mt-1">{opt.description}</p>
           </GlowSelectableCard>
         ))}
       </div>
@@ -91,7 +91,7 @@ export function InputMethod({
           <button
             type="button"
             onClick={onSkip}
-            className="text-gray-400 text-sm hover:text-gray-300"
+            className="text-stone-500 text-sm hover:text-stone-700"
           >
             I&apos;ll do this later
           </button>

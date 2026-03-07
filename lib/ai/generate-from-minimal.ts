@@ -1,11 +1,12 @@
 /**
  * Generate full resume from minimal user input (name, role, experience level, job titles, project titles, optional JD).
- * Uses Mistral; schema requires 3+ bullets per project so the LLM always returns them.
+ * Uses Mistral API; prompt is informed by patterns from 27k+ resumes. Schema requires 3+ bullets per project.
  */
 
 import { z } from "zod";
 import { generateObject } from "ai";
 import { getModel, resolveModelOptions } from "./model";
+import { getResumePatternsPrompt } from "./resumePatterns";
 import { extractedResumeSchema } from "@/lib/validation/resumeSchema";
 import type { ResumeData } from "@/types/resume";
 import {
@@ -41,7 +42,8 @@ RULES:
 - Skills: infer from target role, job titles, and projects. List 10-18 items: technical skills, tools, frameworks, and soft skills. Use exact terms that appear in job descriptions for the target role.
 - Professional summary: 2-4 sentences, dense with ATS keywords and outcomes. Match seniority and industry. Make the candidate sound like a strong fit for the target role.
 - If a job description is provided, extract required keywords and core skills and embed them naturally in summary, every bullet, and skills.
-- Output only valid JSON matching the schema. Use empty string for missing optional fields. Dates: short form like "Jan 2022" or "Present". For each project include "title", "description", and "bullets" (array of 3+ strings).`;
+- Output only valid JSON matching the schema. Use empty string for missing optional fields. Dates: short form like "Jan 2022" or "Present". For each project include "title", "description", and "bullets" (array of 3+ strings).`
+  + getResumePatternsPrompt();
 
 export interface GenerateFromMinimalInput {
   fullName: string;
@@ -106,7 +108,7 @@ ${jobDescription ? `\n--- JOB DESCRIPTION (tailor resume to this) ---\n${jobDesc
 2. Write a professional summary (2-4 sentences) for someone targeting "${targetRole}" with ${levelLabel} experience.
 3. For each job title listed above, create ONE work experience entry with company (use "${experiences[0]?.company || "Company"}" or infer), startDate/endDate (infer plausible dates from ${levelLabel}), and 4-6 impact bullets. Use action verbs and realistic metrics.
 4. Infer 8-15 skills from the role, job titles, and projects. Include technical skills, tools, and soft skills.
-5. For each project listed, create a project entry with "title", "description" (one-sentence overview), and "bullets" (array of at least 3 bullet points). Each project bullet must use an action verb, mention technologies or methods, and state an outcome. Use ATS keywords relevant to ${targetRole}.
+5. For each project listed, use the EXACT "title" and "description" (one-line) as provided by the candidate above; do not rewrite them. Only generate the "bullets" array (at least 3 bullet points per project). Each bullet must use an action verb, mention technologies or methods, and state an outcome. Use ATS keywords relevant to ${targetRole}.
 6. Include one education placeholder: school "—", degree "—", field "—", dates "—" if not provided.
 7. Output valid JSON matching the schema. Include "projects" array; each project MUST have "title", "description", and "bullets" (exactly 3 or more strings—this is required).`;
 
@@ -163,27 +165,38 @@ ${jobDescription ? `\n--- JOB DESCRIPTION (tailor resume to this) ---\n${jobDesc
   if (education.length === 0) education.push(createEmptyEducation(crypto.randomUUID?.() ?? "edu-0"));
 
   const projectsList = object.projects ?? [];
+  // Preserve user's project title and oneLiner; use AI only for bullets
   const projectsResume = projectsList.length
     ? projectsList.map((p: Record<string, unknown>, i: number) => {
         const rawBullets = Array.isArray(p.bullets) ? (p.bullets as string[]).filter(Boolean) : [];
-        const desc = (p.description as string) ?? "";
-        const title = (p.title as string) ?? "";
+        const llmDesc = (p.description as string) ?? "";
+        const llmTitle = (p.title as string) ?? "";
+        const userProj = projects[i];
+        const title = (userProj?.title?.trim() || llmTitle) || "";
+        const description = (userProj?.oneLiner?.trim() || llmDesc) || "";
         let bullets = rawBullets.length >= 3 ? rawBullets : rawBullets.slice();
-        if (bullets.length < 3 && desc) {
-          const parts = desc.split(/[.;]\s+/).filter(Boolean);
+        if (bullets.length < 3 && description) {
+          const parts = description.split(/[.;]\s+/).filter(Boolean);
           while (bullets.length < 3 && parts.length > 0) bullets.push(parts.shift()!.trim());
-          while (bullets.length < 3) bullets.push(desc);
+          while (bullets.length < 3) bullets.push(description);
         } else if (bullets.length < 3 && title) {
-          while (bullets.length < 3) bullets.push(desc || `${title}: expanded impact and outcomes.`);
+          while (bullets.length < 3) bullets.push(description || `${title}: expanded impact and outcomes.`);
         }
         return {
           ...createEmptyProject(crypto.randomUUID?.() ?? `proj-${i}`),
           title,
-          description: desc,
-          bullets: bullets.length > 0 ? bullets.slice(0, 8) : (desc ? [desc] : []),
+          description,
+          bullets: bullets.length > 0 ? bullets.slice(0, 8) : (description ? [description] : []),
         };
       })
-    : [createEmptyProject(crypto.randomUUID?.() ?? "proj-0")];
+    : projects.length > 0
+      ? projects.map((p, i) => ({
+          ...createEmptyProject(crypto.randomUUID?.() ?? `proj-${i}`),
+          title: p.title?.trim() || "",
+          description: p.oneLiner?.trim() || "",
+          bullets: [] as string[],
+        }))
+      : [createEmptyProject(crypto.randomUUID?.() ?? "proj-0")];
 
   const resume: ResumeData = {
     ...createEmptyResume(),

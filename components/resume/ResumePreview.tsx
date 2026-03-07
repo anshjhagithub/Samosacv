@@ -3,6 +3,9 @@
 import type { ResumeData, TemplateId } from "@/types/resume";
 import { ClassicResume } from "./templates/ClassicResume";
 import { ModernResume } from "./templates/ModernResume";
+import { MinimalResume } from "./templates/MinimalResume";
+import { ProfessionalResume } from "./templates/ProfessionalResume";
+import { ExecutiveResume } from "./templates/ExecutiveResume";
 import { ThemedResume } from "./templates/ThemedResume";
 import { RESUME_THEMES } from "./templates/themes";
 
@@ -10,6 +13,9 @@ export function ResumePreview({ data }: { data: ResumeData }) {
   const id = data.templateId;
   if (id === "classic") return <ClassicResume data={data} />;
   if (id === "modern") return <ModernResume data={data} />;
+  if (id === "minimal") return <MinimalResume data={data} />;
+  if (id === "professional") return <ProfessionalResume data={data} />;
+  if (id === "executive") return <ExecutiveResume data={data} />;
   const theme = RESUME_THEMES[id];
   if (theme) return <ThemedResume data={data} theme={theme} />;
   return <ClassicResume data={data} />;

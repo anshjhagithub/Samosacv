@@ -5,8 +5,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-confirm-secret",
 };
 
-const PREMIUM_PAY_RESERVE_PAISE = 1500;
-const PREMIUM_PLATFORM_FEE_PAISE = 500; // ₹5
+const PREMIUM_PAY_RESERVE_PAISE = 1500; // ₹15
+const PREMIUM_PLATFORM_FEE_PAISE = 500; // unchanged
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
     const supabase = createAdminClient();
     const { data: tokenRow, error: tokenErr } = await supabase
       .from("generation_tokens")
-      .select("id, user_id, model, allocation_type")
+      .select("id, user_id, model, allocation_type, used_at")
       .eq("token", token)
       .single();
 
@@ -54,33 +54,64 @@ Deno.serve(async (req) => {
       );
     }
 
-    const platformFeePaise = tokenRow.model === "premium" && tokenRow.allocation_type === "premium_pay_per_use"
+    const platformFeePaise = tokenRow.allocation_type === "premium_pay_per_use"
       ? PREMIUM_PLATFORM_FEE_PAISE
       : 0;
-    const totalCostPaise = platformFeePaise + apiCostPaise;
+    const totalCostPaise = platformFeePaise;
 
     if (!success) {
-      // Refund
-      if (tokenRow.allocation_type === "free") {
-        const { data: lim } = await supabase.from("user_limits").select("free_generations_used").eq("user_id", tokenRow.user_id).single();
-        if (lim)
-          await supabase.from("user_limits").update({ free_generations_used: Math.max(0, (lim.free_generations_used ?? 1) - 1), updated_at: new Date().toISOString() }).eq("user_id", tokenRow.user_id);
-      } else if (tokenRow.allocation_type === "premium_pack") {
-        const { data: lim } = await supabase.from("user_limits").select("premium_generations_remaining").eq("user_id", tokenRow.user_id).single();
-        if (lim)
-          await supabase.from("user_limits").update({ premium_generations_remaining: (lim.premium_generations_remaining ?? 0) + 1, updated_at: new Date().toISOString() }).eq("user_id", tokenRow.user_id);
+      // Refund on failure
+      if (tokenRow.allocation_type === "premium_pack") {
+        const { data: lim } = await supabase
+          .from("user_limits")
+          .select("premium_generations_remaining")
+          .eq("user_id", tokenRow.user_id)
+          .single();
+        if (lim) {
+          await supabase
+            .from("user_limits")
+            .update({
+              premium_generations_remaining: (lim.premium_generations_remaining ?? 0) + 1,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("user_id", tokenRow.user_id);
+        }
       } else if (tokenRow.allocation_type === "premium_pay_per_use") {
-        const { data: lim } = await supabase.from("user_limits").select("wallet_balance_paise").eq("user_id", tokenRow.user_id).single();
-        if (lim)
-          await supabase.from("user_limits").update({ wallet_balance_paise: (lim.wallet_balance_paise ?? 0) + PREMIUM_PAY_RESERVE_PAISE, updated_at: new Date().toISOString() }).eq("user_id", tokenRow.user_id);
+        const { data: lim } = await supabase
+          .from("user_limits")
+          .select("wallet_balance_paise")
+          .eq("user_id", tokenRow.user_id)
+          .single();
+        if (lim) {
+          await supabase
+            .from("user_limits")
+            .update({
+              wallet_balance_paise: (lim.wallet_balance_paise ?? 0) + PREMIUM_PAY_RESERVE_PAISE,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("user_id", tokenRow.user_id);
+        }
       }
     } else {
-      // Premium pay-per-use: refund reserve and deduct actual (platform_fee + api_cost)
+      // On success for pay-per-use: refund reserve minus actual fee
       if (tokenRow.allocation_type === "premium_pay_per_use") {
         const refund = PREMIUM_PAY_RESERVE_PAISE - totalCostPaise;
-        const { data: lim } = await supabase.from("user_limits").select("wallet_balance_paise").eq("user_id", tokenRow.user_id).single();
-        if (lim)
-          await supabase.from("user_limits").update({ wallet_balance_paise: Math.max(0, (lim.wallet_balance_paise ?? 0) + refund), updated_at: new Date().toISOString() }).eq("user_id", tokenRow.user_id);
+        if (refund !== 0) {
+          const { data: lim } = await supabase
+            .from("user_limits")
+            .select("wallet_balance_paise")
+            .eq("user_id", tokenRow.user_id)
+            .single();
+          if (lim) {
+            await supabase
+              .from("user_limits")
+              .update({
+                wallet_balance_paise: Math.max(0, (lim.wallet_balance_paise ?? 0) + refund),
+                updated_at: new Date().toISOString(),
+              })
+              .eq("user_id", tokenRow.user_id);
+          }
+        }
       }
     }
 
@@ -103,7 +134,13 @@ Deno.serve(async (req) => {
       JSON.stringify({
         ok: true,
         audit: success
-          ? { tokens_used: tokensUsed, api_cost_paise: apiCostPaise, platform_fee_paise: platformFeePaise, total_cost_paise: totalCostPaise, free_or_paid: tokenRow.allocation_type }
+          ? {
+              tokens_used: tokensUsed,
+              api_cost_paise: apiCostPaise,
+              platform_fee_paise: platformFeePaise,
+              total_cost_paise: totalCostPaise,
+              free_or_paid: tokenRow.allocation_type,
+            }
           : null,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

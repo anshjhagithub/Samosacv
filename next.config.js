@@ -10,16 +10,28 @@ const nextConfig = {
       { protocol: "https", hostname: "images.unsplash.com", pathname: "/**" },
     ],
     unoptimized: false,
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256],
   },
   webpack: (config, { isServer }) => {
     if (isServer) {
       config.resolve = config.resolve || {};
       config.resolve.fallback = { ...config.resolve.fallback, canvas: false };
     }
+    // Reduce large-string serialization in cache (avoids PackFileCacheStrategy warning)
+    if (config.cache && typeof config.cache === "object" && config.cache.type === "filesystem") {
+      config.cache.compression = false;
+    }
     return config;
   },
-  // Production-safe: no experimental flags that break Vercel
   poweredByHeader: false,
+  ...(process.env.OUTPUT === "standalone" ? { output: "standalone" } : {}),
+  compress: true,
+  async headers() {
+    return [
+      { source: "/_next/static/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }] },
+    ];
+  },
 };
 
 module.exports = nextConfig;

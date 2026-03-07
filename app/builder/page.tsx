@@ -31,14 +31,14 @@ export default function BuilderPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0c0a12] flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <motion.div
           className="flex flex-col items-center gap-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
         >
-          <div className="w-12 h-12 rounded-full border-2 border-accent border-t-transparent animate-spin" />
-          <p className="text-gray-400">Loading your resume…</p>
+          <div className="w-12 h-12 rounded-full border-2 border-amber-500 border-t-transparent animate-spin" />
+          <p className="text-stone-600">Loading your resume…</p>
         </motion.div>
       </div>
     );

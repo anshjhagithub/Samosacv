@@ -5,9 +5,12 @@ import { extractResume } from "@/lib/ai/resume-extract";
 
 export const maxDuration = 60;
 
+const UNLIMITED_REGEN_EMAIL = "anshjha8463@gmail.com";
+
 /**
  * Consume one ₹2 regeneration credit and run extract again (same AI route).
  * Body: { resumeId: string, content: string, jobDescription?: string }
+ * Special: anshjha8463@gmail.com has unlimited regenerations (no credit consumed).
  */
 export async function POST(request: Request) {
   try {
@@ -29,12 +32,15 @@ export async function POST(request: Request) {
       );
     }
 
-    const consumed = await deductRegenerationCredit(user.id, resumeId);
-    if (!consumed) {
-      return NextResponse.json(
-        { error: "No regeneration credit. Pay ₹2 to regenerate.", code: "NO_CREDIT" },
-        { status: 402 }
-      );
+    const hasUnlimitedRegen = user.email?.toLowerCase() === UNLIMITED_REGEN_EMAIL;
+    if (!hasUnlimitedRegen) {
+      const consumed = await deductRegenerationCredit(user.id, resumeId);
+      if (!consumed) {
+        return NextResponse.json(
+          { error: "No regeneration credit. Pay ₹2 to regenerate.", code: "NO_CREDIT" },
+          { status: 402 }
+        );
+      }
     }
 
     const jobDescription = typeof body.jobDescription === "string" ? body.jobDescription.trim() : undefined;

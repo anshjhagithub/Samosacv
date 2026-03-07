@@ -22,9 +22,9 @@ const messages: Record<PaymentRequiredCode, string> = {
   FREE_LIMIT_REACHED:
     "You've used your 2 free resume generations. Upgrade to continue creating resumes.",
   PREMIUM_LOCKED:
-    "Unlock premium for ₹49 and get 6 premium generations, or use pay-per-use with your wallet.",
+    "Unlock premium for ₹49 and get 5 premium generations, or use pay-per-use with your wallet.",
   INSUFFICIENT_FUNDS:
-    "Add balance to your wallet to use premium generations (₹5 + API cost per generation).",
+    "Add balance to your wallet to use premium generations (₹15 per generation).",
 };
 
 export function PaymentRequiredModal({
@@ -56,14 +56,14 @@ export function PaymentRequiredModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-2xl border border-[#2d2640] bg-[#16121f] p-6 shadow-xl"
+        className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
         role="document"
       >
-        <h2 id="payment-modal-title" className="text-lg font-semibold text-white mb-2">
+        <h2 id="payment-modal-title" className="text-lg font-semibold text-stone-900 mb-2">
           {title}
         </h2>
-        <p className="text-gray-400 text-sm mb-6">{message}</p>
+        <p className="text-stone-600 text-sm mb-6">{message}</p>
         <div className="flex flex-col sm:flex-row gap-3">
           {primaryAction && (
             <button
@@ -72,7 +72,7 @@ export function PaymentRequiredModal({
                 primaryAction();
                 onClose();
               }}
-              className="flex-1 rounded-xl bg-accent px-4 py-3 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+              className="flex-1 rounded-xl bg-amber-600 px-4 py-3 text-sm font-medium text-white hover:bg-amber-700 transition-colors"
             >
               {code === "FREE_LIMIT_REACHED"
                 ? "Upgrade"
@@ -84,7 +84,7 @@ export function PaymentRequiredModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 rounded-xl border border-[#2d2640] bg-transparent px-4 py-3 text-sm font-medium text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
+            className="flex-1 rounded-xl border border-stone-300 bg-transparent px-4 py-3 text-sm font-medium text-stone-600 hover:text-stone-900 hover:border-stone-400 transition-colors"
           >
             Close
           </button>

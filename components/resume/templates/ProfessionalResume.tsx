@@ -111,14 +111,15 @@ export function ProfessionalResume({ data }: { data: ResumeData }) {
               {projects.filter((p) => p.title || p.description || (p.bullets && p.bullets.length)).map((proj) => (
                 <div key={proj.id}>
                   <span className="font-semibold">{proj.title || "Project"}</span>
+                  {proj.description ? (
+                    <p className="text-white/80 text-[9px] mt-0.5">{proj.description}</p>
+                  ) : null}
                   {proj.bullets && proj.bullets.length > 0 ? (
                     <ul className="text-white/80 text-[9px] mt-0.5 list-disc pl-4 space-y-0.5">
                       {proj.bullets.map((b, i) => (
                         <li key={i}>{b}</li>
                       ))}
                     </ul>
-                  ) : proj.description ? (
-                    <p className="text-white/80 text-[9px] mt-0.5">{proj.description}</p>
                   ) : null}
                 </div>
               ))}

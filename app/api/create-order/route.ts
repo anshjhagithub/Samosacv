@@ -37,18 +37,29 @@ export async function POST(request: Request) {
 
     const body = await request.json().catch(() => ({}));
     const isRegeneration = body.type === "regeneration" && body.resumeId;
+    const isBuilderImprove = body.type === "builder_improve" && (body.feature === "summary_improve" || body.feature === "project_improve");
     const isUpsell = body.type === "upsell" && body.amount === 12;
+    const isResumeUpload = body.type === "resume_upload";
     const resumeId = typeof body.resumeId === "string" ? body.resumeId.trim() || null : null;
-    const isToolkitCart = !isRegeneration && !isUpsell && (body.cart != null || body.line_items != null);
+    const isToolkitCart = !isRegeneration && !isBuilderImprove && !isUpsell && !isResumeUpload && (body.cart != null || body.line_items != null);
 
     let amount: number;
     let lineItems: Record<string, boolean>;
     let orderId: string;
 
-    if (isRegeneration) {
+    if (isResumeUpload) {
+      amount = FEATURE_PRICING.resume_pdf;
+      lineItems = { resume_pdf: true };
+      orderId = `upload_${user.id}_${Date.now()}`;
+    } else if (isRegeneration) {
       amount = FEATURE_PRICING.resume_regeneration;
       lineItems = { resume_regeneration: true };
       orderId = `regen_${user.id}_${body.resumeId}_${Date.now()}`;
+    } else if (isBuilderImprove) {
+      const feature = body.feature as "summary_improve" | "project_improve";
+      amount = FEATURE_PRICING[feature];
+      lineItems = { [feature]: true };
+      orderId = `improve_${user.id}_${feature}_${Date.now()}`;
     } else if (isUpsell) {
       amount = 12;
       lineItems = { mock_interview_live: true };
@@ -58,7 +69,9 @@ export async function POST(request: Request) {
       lineItems = typeof cart === "object" && !Array.isArray(cart)
         ? getLineItemsForOrder(cart as Partial<Record<FeatureSlug, boolean>>)
         : { resume_pdf: true };
-      amount = getCartTotal(cart as Partial<Record<FeatureSlug, boolean>>);
+      amount = typeof body.amount === "number" && body.amount >= 0
+        ? body.amount
+        : getCartTotal(cart as Partial<Record<FeatureSlug, boolean>>);
       if (amount < FEATURE_PRICING.resume_pdf) {
         return NextResponse.json(
           { error: "Cart must include resume PDF (₹7 minimum)" },
@@ -95,6 +108,7 @@ export async function POST(request: Request) {
     }
 
     const cashfree = getCashfreeClient();
+    const returnTo = body.return_to === "create" ? "&return=create" : "";
     const orderRequest = {
       order_amount: amount,
       order_currency: "INR",
@@ -105,7 +119,7 @@ export async function POST(request: Request) {
         customer_phone: (user.phone as string) ?? "",
       },
       order_meta: {
-        return_url: `${baseUrl}/payment-status?order_id={order_id}`,
+        return_url: `${baseUrl}/payment-status?order_id={order_id}${returnTo}`,
       },
     };
 

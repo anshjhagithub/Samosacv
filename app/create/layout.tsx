@@ -5,7 +5,7 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://samosacv.com";
 export const metadata: Metadata = {
   title: "Create Resume from PDF or Text | Samosa CV India",
   description:
-    "Create your resume from existing PDF or paste. AI extracts and tailors content. ATS-ready in minutes. India's AI resume builder. ₹5 to download.",
+    "Create your resume from existing PDF or paste. AI extracts and tailors content. ATS-ready in minutes. India's AI resume builder. ₹15 to download.",
   alternates: { canonical: `${siteUrl}/create` },
   robots: { index: true, follow: true },
 };

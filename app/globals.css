@@ -3,31 +3,116 @@
 @tailwind utilities;
 
 :root {
-  --color-primary: 139 92 246;
-  --color-surface: 22 18 31;
-  --dark-bg: #0c0a12;
-  --dark-surface: #16121f;
-  --accent: #8B5CF6;
+  --color-primary: 217 119 6;
+  --color-surface: 255 251 235;
+  --bg: #fffbeb;
+  --surface: #fef3c7;
+  --surface-elevated: #ffffff;
+  --border: #fde68a;
+  --border-strong: #fbbf24;
+  --accent: #d97706;
+  --accent-soft: #f59e0b;
+  --accent-deep: #92400e;
+  --text: #1c1917;
+  --text-muted: #57534e;
+  --text-subtle: #78716c;
 }
 
 body {
   font-feature-settings: "rlig" 1, "calt" 1;
   @apply antialiased;
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
-body.theme-dark {
-  @apply text-white;
-  background: linear-gradient(135deg, #0c0a12 0%, #1a1525 40%, #120f1f 100%);
+body.theme-light {
+  color: var(--text);
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(254,243,199,.45) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 100%, rgba(251,191,36,.08) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 40% at 10% 60%, rgba(245,158,11,.06) 0%, transparent 50%),
+    linear-gradient(175deg, #fffdf7 0%, #fefce8 20%, #fef9e7 45%, #faf7f2 70%, #f7f3ed 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
 }
 
-/* Resume PDF export: ensure clean print */
+/* Resume PDF export */
 .resume-pdf-source {
   width: 210mm;
   min-height: 297mm;
+}
+
+/* Logo ticker */
+@keyframes ticker {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-ticker {
+  animation: ticker 40s linear infinite;
+}
+
+/* Pulse glow */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.05); }
+}
+.animate-pulse-glow {
+  animation: pulse-glow 4s ease-in-out infinite;
+}
+
+/* Floating samosa logo */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Shine sweep for CTA buttons */
+@keyframes shine {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+.btn-shine::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transform: translateX(-100%);
+}
+.btn-shine:hover::after {
+  animation: shine 0.6s ease-out;
+}
+
+/* Hide scrollbar */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Selection color */
+::selection {
+  background: #fbbf24;
+  color: #78350f;
+}
+
+/* Glass card */
+.glass-card {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
