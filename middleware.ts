@@ -2,6 +2,11 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
+  // Skip auth callback route completely
+  if (request.nextUrl.pathname.startsWith("/auth/callback")) {
+    return NextResponse.next();
+  }
+
   let response = NextResponse.next({ request });
 
   try {
@@ -24,7 +29,7 @@ export async function middleware(request: NextRequest) {
 
     await supabase.auth.getUser();
   } catch {
-    // Supabase unreachable (timeout / network issue) — continue without auth
+    // Supabase unreachable — continue
   }
 
   return response;
@@ -32,6 +37,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|auth/callback|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
