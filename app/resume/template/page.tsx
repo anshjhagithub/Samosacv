@@ -26,6 +26,15 @@ export default function TemplateSelectPage() {
     router.push("/resume/projects");
   };
 
+  const handleUseTemplate = (templateId: TemplateId) => {
+    setSelected(templateId);
+    const resume = loadResume();
+    if (resume) {
+      saveResume({ ...resume, templateId });
+    }
+    router.push("/resume/projects");
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <header className="border-b border-amber-900/5 bg-gradient-to-b from-amber-50/95 to-white/90 backdrop-blur-xl">
@@ -75,6 +84,7 @@ export default function TemplateSelectPage() {
               templateId={id}
               isSelected={selected === id}
               onSelect={() => setSelected(id)}
+              onUse={() => handleUseTemplate(id)}
               index={i}
             />
           ))}
@@ -84,7 +94,19 @@ export default function TemplateSelectPage() {
   );
 }
 
-function TemplateFlowCard({ templateId, isSelected, onSelect, index }: { templateId: TemplateId; isSelected: boolean; onSelect: () => void; index: number }) {
+function TemplateFlowCard({
+  templateId,
+  isSelected,
+  onSelect,
+  onUse,
+  index,
+}: {
+  templateId: TemplateId;
+  isSelected: boolean;
+  onSelect: () => void;
+  onUse: () => void;
+  index: number;
+}) {
   const sampleData = useMemo(() => getSampleResumeData(templateId), [templateId]);
   const display = TEMPLATE_DISPLAY[templateId];
   const containerRef = useRef<HTMLDivElement>(null);
@@ -109,8 +131,15 @@ function TemplateFlowCard({ templateId, isSelected, onSelect, index }: { templat
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(index * 0.06, 0.4), duration: 0.5 }}
     >
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onSelect();
+          }
+        }}
         onClick={onSelect}
         className={`group relative block w-full text-left rounded-xl border bg-white overflow-hidden transition-all duration-300 shadow-md ${
           isSelected
@@ -120,7 +149,7 @@ function TemplateFlowCard({ templateId, isSelected, onSelect, index }: { templat
       >
         <div ref={containerRef} className="relative overflow-hidden" style={{ aspectRatio: "210 / 297" }}>
           <div
-            className="absolute top-0 left-0 origin-top-left"
+            className="absolute top-0 left-0 origin-top-left pointer-events-none"
             style={{ transform: `scale(${scale})`, width: RESUME_W, minHeight: 1123 }}
           >
             <ResumePreview data={{ ...sampleData, templateId }} />
@@ -135,10 +164,18 @@ function TemplateFlowCard({ templateId, isSelected, onSelect, index }: { templat
               <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-6 z-10 pointer-events-none">
-            <span className="rounded-lg bg-amber-600 text-white text-sm font-semibold px-5 py-2.5 shadow-lg translate-y-2 group-hover:translate-y-0 transition-transform">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-6 z-10">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onUse();
+              }}
+              className="rounded-lg bg-amber-600 text-white text-sm font-semibold px-5 py-2.5 shadow-lg translate-y-2 group-hover:translate-y-0 transition-transform"
+            >
               Use this template
-            </span>
+            </button>
           </div>
         </div>
         <div className="px-4 py-3 border-t border-stone-100">
@@ -147,7 +184,7 @@ function TemplateFlowCard({ templateId, isSelected, onSelect, index }: { templat
           </p>
           <p className="text-xs text-stone-500 truncate">{display?.subtitle ?? "ATS-friendly"}</p>
         </div>
-      </button>
+      </div>
     </motion.div>
   );
 }

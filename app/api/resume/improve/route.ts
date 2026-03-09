@@ -55,7 +55,7 @@ export async function POST(request: Request) {
               code: "PAYMENT_REQUIRED",
               amount,
               feature: featureType,
-              preview: "Stronger verbs, ATS-friendly. Pay ₹1 to see full result.",
+              preview: "Stronger verbs, ATS-friendly. Pay ₹5 to see full result.",
             },
             { status: 402 }
           );

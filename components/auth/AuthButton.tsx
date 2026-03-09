@@ -33,6 +33,11 @@ export function AuthButton() {
   const signInWithGoogle = async () => {
     setLoading(true);
     const supabase = createClient();
+    if (typeof document !== "undefined") {
+      const next = window.location.pathname || "/";
+      const secure = window.location.protocol === "https:" ? "; secure" : "";
+      document.cookie = `samosa_oauth_next=${encodeURIComponent(next)}; path=/; max-age=600; samesite=lax${secure}`;
+    }
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {

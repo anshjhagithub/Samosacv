@@ -17,10 +17,17 @@ export function LoginModal({ open, onClose, redirectAfterLogin = "/builder" }: L
     setLoading(true);
     const supabase = createClient();
     const origin = typeof window !== "undefined" ? window.location.origin : "";
+    // Avoid putting `next` in Supabase redirectTo (can fail allowlist checks).
+    // Store it briefly in a cookie for `/auth/callback` to read.
+    if (typeof document !== "undefined") {
+      const next = redirectAfterLogin.startsWith("/") ? redirectAfterLogin : "/builder";
+      const secure = window.location.protocol === "https:" ? "; secure" : "";
+      document.cookie = `samosa_oauth_next=${encodeURIComponent(next)}; path=/; max-age=600; samesite=lax${secure}`;
+    }
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(redirectAfterLogin)}`,
+        redirectTo: `${origin}/auth/callback`,
       },
     });
     setLoading(false);

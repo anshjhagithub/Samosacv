@@ -76,7 +76,7 @@ export async function POST(request: Request) {
       console.error("Order update failed:", orderUpdateError);
     }
 
-    // Handle regeneration orders (₹2)
+    // Handle regeneration orders (₹15)
     const isRegenOrder = orderId.startsWith("regen_");
     if (isRegenOrder) {
       const parts = orderId.split("_");
@@ -92,7 +92,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // Handle builder improve orders (₹1)
+    // Handle builder improve orders (₹5)
     const isImproveOrder = orderId.startsWith("improve_");
     if (isImproveOrder) {
       const parts = orderId.split("_");
