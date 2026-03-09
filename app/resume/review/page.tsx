@@ -121,7 +121,7 @@ export default function ResumeReviewPage() {
         </div>
         {atsScore < 90 && (
           <p className="text-sm text-stone-500">
-            Scores below 90 are often rejected by ATS. Use "Optimize for ATS" or unlock ATS Improver (₹15).
+            Scores below 90 are often rejected by ATS. Use &ldquo;Optimize for ATS&rdquo; or unlock ATS Improver (&#8377;15).
           </p>
         )}
       </div>

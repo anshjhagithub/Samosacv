@@ -1051,7 +1051,7 @@ export function ResumeBuilder({ data, onUpdate }: ResumeBuilderProps) {
                         onClick={isPaid ? handleDownloadResume : () => setShowLoginModal(true)}
                         className="w-full rounded-xl bg-amber-600 px-4 py-3.5 text-base font-bold text-white hover:bg-amber-700 transition-all shadow-lg shadow-amber-900/20"
                       >
-                        {isPaid ? "Download resume" : `Pay \u20B9${total} \u2014 Get resume`}
+                        {isPaid ? "Download resume" : "Pay ₹15 to unlock resume"}
                       </button>
                     </>
                   );
