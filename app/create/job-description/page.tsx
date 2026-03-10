@@ -1,13 +1,22 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { saveResume, setUnlockPreview } from "@/lib/storage/resumeStorage";
 import { LoginModal } from "@/components/auth/LoginModal";
 import { SiteHeader } from "@/components/layout/SiteHeader";
+import { rolePresets, ROLE_IDS } from "@/lib/rolePresets";
+import { type ExperienceLevel } from "@/lib/resumeFlowStorage";
+
+const EXP_OPTIONS: { value: ExperienceLevel; label: string; icon: string }[] = [
+  { value: "fresher", label: "Fresher", icon: "🎓" },
+  { value: "1-3", label: "1-3 yrs", icon: "🚀" },
+  { value: "3-6", label: "3-6 yrs", icon: "⚡" },
+  { value: "6+", label: "6+ yrs", icon: "👑" },
+];
 
 const inputClass =
   "w-full rounded-xl border-2 border-amber-200/80 bg-white px-4 py-3.5 text-stone-900 placeholder-stone-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none transition-all shadow-sm";
@@ -15,7 +24,12 @@ const inputClass =
 export default function CreateJobDescriptionPage() {
   const router = useRouter();
   const [showLogin, setShowLogin] = useState(false);
+  const [fullName, setFullName] = useState("");
+  const [targetRole, setTargetRole] = useState("");
+  const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel>("1-3");
   const [jobDescription, setJobDescription] = useState("");
+  const [showRoleSuggestions, setShowRoleSuggestions] = useState(false);
+
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const errorRef = useRef<HTMLDivElement>(null);
@@ -26,34 +40,74 @@ export default function CreateJobDescriptionPage() {
     }
   }, [submitError]);
 
+  const roleOptions = useMemo(() => ROLE_IDS.map((id) => rolePresets[id].label), []);
+  const query = targetRole.trim().toLowerCase();
+  const suggestions = useMemo(() => {
+    if (!query) return roleOptions;
+    const filtered = roleOptions.filter((r) => r.toLowerCase().includes(query));
+    return filtered.length ? filtered : roleOptions;
+  }, [query, roleOptions]);
+
+  const canSubmit = fullName.trim() && targetRole.trim() && jobDescription.trim().length >= 50;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError(null);
-    const trimmed = jobDescription.trim();
-    if (!trimmed || trimmed.length < 50) {
-      setSubmitError("Paste a job description (at least 50 characters).");
+    if (!canSubmit) {
+      setSubmitError("Please fill out your name, target role, and paste a job description (at least 50 characters).");
       return;
     }
     const supabase = createClient();
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) {
-      setShowLogin(true);
-      return;
-    }
+    
     setLoading(true);
     try {
-      const res = await fetch("/api/resume/extract", {
+      const authHeaders: Record<string, string> = { "Content-Type": "application/json" };
+      let generationToken: string | null = null;
+      
+      if (session?.access_token) {
+        authHeaders.Authorization = `Bearer ${session.access_token}`;
+        const allocateRes = await fetch("/api/allocate", { method: "POST", headers: authHeaders, body: JSON.stringify({}) });
+        if (allocateRes.ok) {
+          const allocateData = await allocateRes.json();
+          generationToken = allocateData.token ?? null;
+        }
+        if (allocateRes.status === 402) {
+          setSubmitError("Payment required to generate. Please complete payment and try again.");
+          setLoading(false);
+          return;
+        }
+      } else {
+         setShowLogin(true);
+         setLoading(false);
+         return;
+      }
+      
+      if (generationToken) authHeaders["X-Generation-Token"] = generationToken;
+
+      const payload = {
+        fullName: fullName.trim(),
+        targetRole: targetRole.trim(),
+        experienceLevel,
+        jobDescription: jobDescription.trim(),
+        experiences: [],
+        projects: []
+      };
+
+      const res = await fetch("/api/resume/generate-from-minimal", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({ content: "", jobDescription: trimmed }),
+        headers: authHeaders,
+        body: JSON.stringify(payload),
       });
+      
       const data = await res.json();
       if (res.status === 401) {
         setSubmitError("Please sign in again.");
         return;
+      }
+      if (res.status === 402) {
+         setSubmitError(data.message || data.error || "Payment required to generate.");
+         return;
       }
       if (!res.ok) {
         const raw = data.error ?? "Failed to generate resume";
@@ -64,6 +118,7 @@ export default function CreateJobDescriptionPage() {
         setSubmitError(friendly);
         return;
       }
+      
       saveResume(data.resume);
       setUnlockPreview({
         resumeId: crypto.randomUUID?.() ?? `res-${Date.now()}`,
@@ -93,7 +148,7 @@ export default function CreateJobDescriptionPage() {
             Create from job description
           </h1>
           <p className="text-stone-600 text-sm">
-            Paste a job posting. We&apos;ll generate a tailored resume — pay ₹15 when you download.
+            Paste a job posting and your details. We&apos;ll generate a tailored resume — pay ₹15 when you download.
           </p>
         </motion.div>
 
@@ -115,26 +170,102 @@ export default function CreateJobDescriptionPage() {
             </div>
           )}
 
-          <div className="rounded-2xl border-2 border-amber-200/80 bg-white/95 p-5 sm:p-6 shadow-md">
-            <label htmlFor="job-desc" className="block text-sm font-semibold text-stone-800 mb-2">
-              Job description
-            </label>
-            <textarea
-              id="job-desc"
-              value={jobDescription}
-              onChange={(e) => setJobDescription(e.target.value)}
-              placeholder="Paste the full job posting here (at least 50 characters)…"
-              rows={8}
-              className={inputClass}
-            />
+          <div className="rounded-2xl border-2 border-amber-200/80 bg-white/95 p-5 sm:p-6 shadow-md space-y-5">
+            <div>
+              <label htmlFor="fullName" className="block text-sm font-semibold text-stone-800 mb-1.5">Your name</label>
+              <input
+                id="fullName"
+                type="text"
+                required
+                className={inputClass}
+                placeholder="Priya Sharma"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+              />
+            </div>
+            
+            <div className="relative">
+              <label htmlFor="targetRole" className="block text-sm font-semibold text-stone-800 mb-1.5">Target role</label>
+              <input
+                id="targetRole"
+                type="text"
+                required
+                autoComplete="off"
+                className={inputClass}
+                placeholder="Software Developer"
+                value={targetRole}
+                onChange={(e) => setTargetRole(e.target.value)}
+                onFocus={() => setShowRoleSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowRoleSuggestions(false), 200)}
+              />
+              <AnimatePresence>
+                {showRoleSuggestions && suggestions.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -4, scale: 0.98 }}
+                    className="absolute top-full left-0 right-0 mt-1.5 rounded-xl border-2 border-amber-200/80 bg-white/95 shadow-xl py-1.5 z-10 max-h-64 overflow-y-auto"
+                  >
+                    {suggestions.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        className="w-full px-4 py-2.5 text-left text-sm text-stone-700 hover:bg-amber-50 hover:text-amber-800 transition-colors"
+                        onMouseDown={() => {
+                          setTargetRole(s);
+                          setShowRoleSuggestions(false);
+                        }}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-semibold text-stone-800 mb-2">Experience</label>
+              <div className="grid grid-cols-4 gap-2">
+                {EXP_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setExperienceLevel(opt.value)}
+                    className={`rounded-xl py-3 text-center transition-all text-sm font-medium border-2 ${
+                      experienceLevel === opt.value
+                        ? "border-amber-500 bg-amber-50 text-amber-800 shadow-md shadow-amber-900/10"
+                        : "border-amber-200/80 bg-white/90 text-stone-600 hover:border-amber-400 hover:bg-amber-50/80"
+                    }`}
+                  >
+                    <span className="block text-lg mb-0.5">{opt.icon}</span>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="job-desc" className="block text-sm font-semibold text-stone-800 mb-2 pt-2 border-t border-stone-100">
+                Job description
+              </label>
+              <textarea
+                id="job-desc"
+                value={jobDescription}
+                onChange={(e) => setJobDescription(e.target.value)}
+                placeholder="Paste the full job posting here (at least 50 characters)…"
+                rows={8}
+                className={inputClass}
+              />
+            </div>
           </div>
 
           <button
             type="submit"
-            disabled={loading || jobDescription.trim().length < 50}
+            disabled={loading || !canSubmit}
             className="w-full rounded-2xl bg-amber-600 px-6 py-4 text-base font-semibold text-white shadow-lg shadow-amber-900/20 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:-translate-y-0.5"
           >
-            {loading ? "Creating…" : "Create resume"}
+            {loading ? "Creating Full Resume…" : "Create resume"}
           </button>
         </motion.form>
 
@@ -143,7 +274,7 @@ export default function CreateJobDescriptionPage() {
             Import from PDF or paste instead
           </Link>
           {" · "}
-          <Link href="/create" className="text-amber-700 hover:underline font-medium">
+          <Link href="/resume/start" className="text-amber-700 hover:underline font-medium">
             Start from scratch
           </Link>
         </p>

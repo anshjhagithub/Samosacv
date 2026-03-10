@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { useUserLimits } from "@/lib/hooks/useUserLimits";
 import { openCashfreeCheckout } from "@/lib/cashfree";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
@@ -22,12 +21,10 @@ const ADDONS = [
 const PREMIUM_AMOUNT = 49;
 
 export default function PricingPage() {
-  const { limits, isAuthenticated, refresh } = useUserLimits();
   const [payLoading, setPayLoading] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
 
   const handlePayNow = async () => {
-    if (!isAuthenticated) return;
     setPayError(null);
     setPayLoading(true);
     try {
@@ -41,7 +38,6 @@ export default function PricingPage() {
       const sessionId = data.payment_session_id;
       if (!sessionId) { setPayError("No payment session received"); return; }
       await openCashfreeCheckout(sessionId);
-      await refresh();
     } catch (e) {
       setPayError(e instanceof Error ? e.message : "Payment failed");
     } finally { setPayLoading(false); }
@@ -55,15 +51,6 @@ export default function PricingPage() {
         <motion.div className="text-center mb-10" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
           <h1 className="text-3xl sm:text-4xl font-bold text-stone-900">Simple, transparent pricing</h1>
           <p className="mt-2 text-stone-500 text-sm max-w-lg mx-auto">No subscription. No hidden fees. Pay only when you need it.</p>
-          {isAuthenticated && limits && (
-            <div className="mt-5 inline-flex items-center gap-4 rounded-xl border border-stone-200 bg-white px-5 py-2.5 text-sm text-stone-600 shadow-sm">
-              <span>Free left: <strong className="text-stone-900">{limits.free_generations_remaining}</strong></span>
-              <span className="w-px h-4 bg-stone-200" />
-              <span>Premium: <strong className={limits.premium_unlocked ? "text-amber-700" : "text-stone-400"}>{limits.premium_unlocked ? "Unlocked" : "Locked"}</strong></span>
-              <span className="w-px h-4 bg-stone-200" />
-              <span>Wallet: <strong className="text-stone-900">₹{limits.wallet_balance_rupees}</strong></span>
-            </div>
-          )}
         </motion.div>
 
         {payError && (
@@ -167,10 +154,10 @@ export default function PricingPage() {
                   <button
                     type="button"
                     onClick={handlePayNow}
-                    disabled={!isAuthenticated || payLoading}
+                    disabled={payLoading}
                     className="w-full rounded-xl px-6 py-3.5 text-sm font-semibold bg-amber-600 text-white hover:bg-amber-700 shadow-lg shadow-amber-900/15 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:-translate-y-0.5"
                   >
-                    {!isAuthenticated ? "Sign in to unlock" : payLoading ? "Opening checkout…" : "Unlock Premium Bundle"}
+                    {payLoading ? "Opening checkout…" : "Unlock Premium Bundle"}
                   </button>
                 </div>
               </div>

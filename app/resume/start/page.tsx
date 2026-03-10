@@ -57,7 +57,7 @@ export default function ResumeStartPage() {
             <SamosaLogoFull />
           </Link>
           <div className="flex items-center gap-2 text-xs text-stone-400">
-            {["Basics", "Experience", "Template", "Projects"].map((label, i) => (
+            {["Basics", "Experience", "Template", "Education", "Projects"].map((label, i) => (
               <span key={label} className="flex items-center gap-1.5">
                 {i > 0 && <span className="w-4 h-px bg-stone-300 opacity-40" />}
                 <span className={`w-6 h-6 rounded-full text-[10px] font-bold flex items-center justify-center ${i === 0 ? "bg-amber-500 text-white" : "bg-stone-200 text-stone-500"}`}>{i + 1}</span>

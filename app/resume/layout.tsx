@@ -5,9 +5,11 @@ import { usePathname } from "next/navigation";
 import { ResumeFlowProgress } from "@/components/resume-flow/ResumeFlowProgress";
 import { SamosaLogoFull } from "@/components/brand/SamosaLogo";
 
-function getStep(pathname: string): 1 | 2 | 3 | 4 {
-  if (pathname.endsWith("/review")) return 4;
-  if (pathname.endsWith("/projects")) return 3;
+function getStep(pathname: string): 1 | 2 | 3 | 4 | 5 | 6 {
+  if (pathname.endsWith("/review")) return 6;
+  if (pathname.endsWith("/projects")) return 5;
+  if (pathname.endsWith("/education")) return 4;
+  if (pathname.endsWith("/template")) return 3;
   if (pathname.endsWith("/experience")) return 2;
   return 1;
 }

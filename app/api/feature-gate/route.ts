@@ -18,9 +18,35 @@ export async function GET(request: Request) {
     const feature = (searchParams.get("feature") || "resume_pdf") as FeatureSlug;
 
     const granted = await checkAccess(user.id, feature, resumeId);
-    return NextResponse.json({ granted });
+    
+    // Also fetch any purchased add-ons for this resume if they exist
+    let purchasedAddons: string[] = [];
+    if (granted && resumeId) {
+      const { data: orders } = await supabase
+        .from("orders")
+        .select("line_items")
+        .eq("user_id", user.id)
+        .eq("resume_id", resumeId)
+        .eq("status", "paid");
+        
+      if (orders && orders.length > 0) {
+        const addonSet = new Set<string>();
+        orders.forEach(order => {
+          if (order.line_items && typeof order.line_items === 'object') {
+            Object.keys(order.line_items).forEach(k => {
+              if (order.line_items[k] === true && k !== 'resume_pdf' && k !== 'mock_interview_live' && k !== 'resume_regeneration') {
+                addonSet.add(k);
+              }
+            });
+          }
+        });
+        purchasedAddons = Array.from(addonSet);
+      }
+    }
+
+    return NextResponse.json({ granted, purchasedAddons });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Feature gate check failed";
-    return NextResponse.json({ granted: false, error: message }, { status: 500 });
+    return NextResponse.json({ granted: false, purchasedAddons: [], error: message }, { status: 500 });
   }
 }

@@ -23,7 +23,7 @@ export default function TemplateSelectPage() {
     if (resume) {
       saveResume({ ...resume, templateId: selected });
     }
-    router.push("/resume/projects");
+    router.push("/resume/education");
   };
 
   const handleUseTemplate = (templateId: TemplateId) => {
@@ -32,7 +32,7 @@ export default function TemplateSelectPage() {
     if (resume) {
       saveResume({ ...resume, templateId });
     }
-    router.push("/resume/projects");
+    router.push("/resume/education");
   };
 
   return (
@@ -43,7 +43,7 @@ export default function TemplateSelectPage() {
             <SamosaLogoFull />
           </Link>
           <div className="flex items-center gap-4 text-xs text-stone-400">
-            {["Basics", "Experience", "Template", "Projects"].map((label, i) => (
+            {["Basics", "Experience", "Template", "Education", "Projects"].map((label, i) => (
               <span key={label} className="flex items-center gap-1.5">
                 {i > 0 && <span className="w-6 h-px bg-stone-300" />}
                 <span className={`w-6 h-6 rounded-full text-[10px] font-bold flex items-center justify-center ${i === 2 ? "bg-amber-500 text-white" : i < 2 ? "bg-amber-200 text-amber-800" : "bg-stone-200 text-stone-500"}`}>{i + 1}</span>

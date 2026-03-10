@@ -3,11 +3,13 @@
 const STEPS = [
   { path: "/resume/start", label: "Basic info" },
   { path: "/resume/experience", label: "Experience" },
+  { path: "/resume/template", label: "Template" },
+  { path: "/resume/education", label: "Education" },
   { path: "/resume/projects", label: "Projects" },
   { path: "/resume/review", label: "Review" },
 ];
 
-export function ResumeFlowProgress({ currentStep }: { currentStep: 1 | 2 | 3 | 4 }) {
+export function ResumeFlowProgress({ currentStep }: { currentStep: 1 | 2 | 3 | 4 | 5 | 6 }) {
   return (
     <div className="flex items-center gap-2 sm:gap-4">
       {STEPS.map((step, i) => {

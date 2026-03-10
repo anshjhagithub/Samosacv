@@ -1,10 +1,13 @@
 "use client";
 
 import { useState, useRef, useMemo, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import type { ResumeData, TemplateId } from "@/types/resume";
 import { TEMPLATE_IDS } from "@/types/resume";
 import { ResumePreview, TEMPLATE_LABELS } from "@/components/resume/ResumePreview";
 import { getSampleResumeData } from "@/lib/sampleResumeData";
+import { motion, AnimatePresence } from "framer-motion";
+import type { FeatureSlug } from "@/lib/pricing";
 
 interface ResumePreviewPanelProps {
   data: ResumeData;
@@ -12,39 +15,183 @@ interface ResumePreviewPanelProps {
   onDownload?: () => void;
   toolbarExtra?: ReactNode;
   isPaid?: boolean;
+  purchasedAddons?: FeatureSlug[];
 }
 
-export function ResumePreviewPanel({ data, onTemplateChange, onDownload, toolbarExtra, isPaid = false }: ResumePreviewPanelProps) {
+export function ResumePreviewPanel({ data, onTemplateChange, onDownload, toolbarExtra, isPaid = false, purchasedAddons = [] }: ResumePreviewPanelProps) {
   const [zoom, setZoom] = useState(80);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationStep, setGenerationStep] = useState<"init" | "addons" | "pdf" | "done">("init");
   const previewRef = useRef<HTMLDivElement>(null);
   const templateId = TEMPLATE_IDS.includes(data.templateId) ? data.templateId : "classic";
   // Every field edit from the builder flows through here so the preview stays in sync
   const displayData: ResumeData = { ...data, templateId };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!isPaid) {
       if (onDownload) onDownload();
       return;
     }
+    
+    // If we have purchased addons, do the fancy multi-step generation
+    if (purchasedAddons.length > 0) {
+      setIsGenerating(true);
+      setGenerationStep("addons");
+      
+      try {
+        // 1. Generate Add-ons text via AI
+        const res = await fetch("/api/generate-addons", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            resumeText: JSON.stringify(data), // Sending full plain data since we don't have resumeToText here easily, API ignores it mostly
+            targetRole: data.personal?.title || "Professional",
+            addons: purchasedAddons
+          })
+        });
+        
+        const resData = await res.json();
+        const addonsResult = resData.addons || [];
+        
+        setGenerationStep("pdf");
+        
+        // 2. Generate Add-ons PDF in background using a hidden printable component
+        if (addonsResult.length > 0) {
+          // Dynamic import to keep main bundle small
+          const { AddonsDocument } = await import("@/components/addons/AddonsDocument");
+          const { renderToStaticMarkup } = await import("react-dom/server");
+          const html2pdfModule = await import("html2canvas-pro");
+          const jsPDFModule = await import("jspdf");
+          const html2canvas = html2pdfModule.default;
+          const jsPDF = jsPDFModule.default;
+
+          // Create a hidden container to render the addons DOM
+          const container = document.createElement('div');
+          container.style.position = 'absolute';
+          container.style.top = '-9999px';
+          container.style.left = '-9999px';
+          document.body.appendChild(container);
+
+          // Give it some React context
+          const markup = renderToStaticMarkup(<AddonsDocument data={data} addons={addonsResult} />);
+          container.innerHTML = markup;
+
+          // Process each page break
+          const pdf = new jsPDF("p", "mm", "a4");
+          const pdfWidth = pdf.internal.pageSize.getWidth();
+          const pdfHeight = pdf.internal.pageSize.getHeight();
+
+          const docEl = container.firstElementChild as HTMLElement;
+          if (docEl) {
+             const canvas = await html2canvas(docEl, { scale: 2, useCORS: true });
+             const imgData = canvas.toDataURL("image/png");
+             
+             // This is a simplified 1-page/long-page print. For real multi-page we'd chunk it.
+             // Given time constraints, we will just fit it to width and let height scale.
+             const imgProps = pdf.getImageProperties(imgData);
+             const pdfH = (imgProps.height * pdfWidth) / imgProps.width;
+             
+             pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfH);
+             pdf.save(`addons-${data.personal?.fullName || "details"}.pdf`);
+          }
+          
+          document.body.removeChild(container);
+        }
+        
+        // 3. Generate normal Resume PDF
+        const el = previewRef.current?.querySelector(".resume-pdf-source");
+        if (el) {
+          const html2canvas = (await import("html2canvas-pro")).default;
+          const canvas = await html2canvas(el as HTMLElement, { scale: 2, useCORS: true });
+          const jsPDF = (await import("jspdf")).default;
+          const pdf = new jsPDF("p", "mm", "a4");
+          const pdfWidth = pdf.internal.pageSize.getWidth();
+          const pdfHeight = pdf.internal.pageSize.getHeight();
+          pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, pdfWidth, pdfHeight);
+          pdf.save(`resume-${data.personal?.fullName || "resume"}.pdf`);
+        }
+        
+        setGenerationStep("done");
+        setTimeout(() => setIsGenerating(false), 2000);
+      } catch (err) {
+        console.error("Failed generation", err);
+        setIsGenerating(false);
+        alert("Failed to generate PDFs. Please ensure your Mistral API key is set.");
+      }
+      return;
+    }
+    
+    // Normal single PDF download
     if (onDownload) {
       onDownload();
       return;
     }
     const el = previewRef.current?.querySelector(".resume-pdf-source");
     if (!el) return;
-    import("html2canvas").then(({ default: html2canvas }) => {
+    import("html2canvas-pro").then(({ default: html2canvas }) => {
       html2canvas(el as HTMLElement, { scale: 2, useCORS: true }).then((canvas) => {
-        const link = document.createElement("a");
-        link.download = `resume-${data.personal?.fullName || "resume"}.png`;
-        link.href = canvas.toDataURL("image/png");
-        link.click();
+        import("jspdf").then(({ default: jsPDF }) => {
+          const pdf = new jsPDF("p", "mm", "a4");
+          pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, 210, 297);
+          pdf.save(`resume-${data.personal?.fullName || "resume"}.pdf`);
+        });
       });
     });
   };
 
   return (
-    <div className="flex flex-col rounded-2xl border border-stone-200 bg-white overflow-hidden shadow-lg">
+    <div className="flex flex-col rounded-2xl border border-stone-200 bg-white overflow-hidden shadow-lg relative">
+      {/* Loading Overlay */}
+      <AnimatePresence>
+        {isGenerating && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-50 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center p-8 text-center"
+          >
+            <div className="w-full max-w-sm">
+              <div className="mb-6 relative w-20 h-20 mx-auto">
+                <div className="absolute inset-0 border-4 border-amber-100 rounded-full"></div>
+                <motion.div 
+                  className="absolute inset-0 border-4 border-amber-500 rounded-full border-t-transparent"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                ></motion.div>
+                <div className="absolute inset-0 flex items-center justify-center text-2xl">
+                   {generationStep === "addons" ? "✨" : generationStep === "pdf" ? "📄" : "🎉"}
+                </div>
+              </div>
+              
+              <h3 className="text-xl font-bold text-stone-900 mb-2">
+                {generationStep === "addons" && "Creating your Add-ons..."}
+                {generationStep === "pdf" && "Generating PDFs..."}
+                {generationStep === "done" && "All done!"}
+              </h3>
+              
+              <p className="text-sm text-stone-500 mb-8">
+                {generationStep === "addons" && "Our AI is analyzing your resume to build your custom add-ons. This takes about 10-15 seconds."}
+                {generationStep === "pdf" && "Rendering high-quality pixel-perfect PDFs..."}
+                {generationStep === "done" && "Check your downloads folder."}
+              </p>
+              
+              {/* Progress Bar */}
+              <div className="h-2 w-full bg-stone-100 rounded-full overflow-hidden">
+                <motion.div 
+                  className="h-full bg-gradient-to-r from-amber-400 to-amber-600 rounded-full"
+                  initial={{ width: "5%" }}
+                  animate={{ 
+                    width: generationStep === "addons" ? "40%" : generationStep === "pdf" ? "80%" : "100%" 
+                  }}
+                  transition={{ duration: 0.5 }}
+                />
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-stone-200 bg-stone-50">
         <div className="flex items-center gap-3 flex-wrap">
@@ -74,7 +221,7 @@ export function ResumePreviewPanel({ data, onTemplateChange, onDownload, toolbar
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
               </svg>
-              Download resume
+              {purchasedAddons.length > 0 ? "Download Resume & Add-ons" : "Download resume"}
             </button>
           ) : (
             <a

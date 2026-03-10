@@ -78,13 +78,10 @@ export function ResumeBuilder({ data, onUpdate }: ResumeBuilderProps) {
   const [isPaid, setIsPaid] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [purchasedAddons, setPurchasedAddons] = useState<FeatureSlug[]>([]);
   const handleDownloadResume = useCallback(() => {
-    if (!isPaid) {
-      setShowLoginModal(true);
-      return;
-    }
     router.push("/unlock");
-  }, [router, isPaid]);
+  }, [router]);
   const [improvingSummary, setImprovingSummary] = useState(false);
   const [newSkill, setNewSkill] = useState("");
   const [regenCredits, setRegenCredits] = useState(0);
@@ -117,7 +114,12 @@ export function ResumeBuilder({ data, onUpdate }: ResumeBuilderProps) {
         const res = await fetch(`/api/feature-gate?resumeId=${encodeURIComponent(preview.resumeId)}&feature=resume_pdf`);
         if (res.ok) {
           const j = await res.json();
-          if (j.granted) setIsPaid(true);
+          if (j.granted) {
+            setIsPaid(true);
+            if (j.purchasedAddons) {
+              setPurchasedAddons(j.purchasedAddons);
+            }
+          }
         }
       } catch {}
     };
@@ -1048,10 +1050,10 @@ export function ResumeBuilder({ data, onUpdate }: ResumeBuilderProps) {
                       </p>
                       <button
                         type="button"
-                        onClick={isPaid ? handleDownloadResume : () => setShowLoginModal(true)}
+                        onClick={handleDownloadResume}
                         className="w-full rounded-xl bg-amber-600 px-4 py-3.5 text-base font-bold text-white hover:bg-amber-700 transition-all shadow-lg shadow-amber-900/20"
                       >
-                        {isPaid ? "Download resume" : "Pay ₹15 to unlock resume"}
+                        Pay ₹15 to unlock resume
                       </button>
                     </>
                   );
@@ -1062,8 +1064,9 @@ export function ResumeBuilder({ data, onUpdate }: ResumeBuilderProps) {
             <ResumePreviewPanel
               data={data}
               onTemplateChange={(templateId) => persist({ ...data, templateId })}
-              onDownload={handleDownloadResume}
+              onDownload={isPaid ? undefined : handleDownloadResume}
               isPaid={isPaid}
+              purchasedAddons={purchasedAddons}
               toolbarExtra={
                 isPaid ? (
                   (regenCredits > 0 || regenUnlimited) ? (

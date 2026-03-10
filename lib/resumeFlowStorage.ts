@@ -1,11 +1,12 @@
 /**
  * localStorage state for the 4-step "Create your resume in 60 seconds" flow.
- * Keys: resume_flow_basic, resume_flow_experience, resume_flow_projects.
+ * Keys: resume_flow_basic, resume_flow_experience, resume_flow_projects, resume_flow_education.
  */
 
 const KEY_BASIC = "resume_flow_basic";
 const KEY_EXPERIENCE = "resume_flow_experience";
 const KEY_PROJECTS = "resume_flow_projects";
+const KEY_EDUCATION = "resume_flow_education";
 const KEY_GENERATED = "resume_flow_generated";
 
 function isClient(): boolean {
@@ -31,6 +32,13 @@ export interface ExperienceEntryInput {
 export interface ProjectEntryInput {
   title: string;
   oneLiner: string;
+}
+
+export interface EducationEntryInput {
+  degree: string;
+  field: string;
+  school: string;
+  duration: string;
 }
 
 export interface GeneratedResult {
@@ -114,6 +122,27 @@ export function setProjectList(list: ProjectEntryInput[]): void {
   }
 }
 
+export function getEducationList(): EducationEntryInput[] {
+  if (!isClient()) return [];
+  try {
+    const raw = localStorage.getItem(KEY_EDUCATION);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as EducationEntryInput[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function setEducationList(list: EducationEntryInput[]): void {
+  if (!isClient()) return;
+  try {
+    localStorage.setItem(KEY_EDUCATION, JSON.stringify(list));
+  } catch (e) {
+    console.warn("Failed to save education list", e);
+  }
+}
+
 export function setGeneratedResult(result: Omit<GeneratedResult, "at">): void {
   if (!isClient()) return;
   try {
@@ -140,6 +169,7 @@ export function clearResumeFlow(): void {
     localStorage.removeItem(KEY_BASIC);
     localStorage.removeItem(KEY_EXPERIENCE);
     localStorage.removeItem(KEY_PROJECTS);
+    localStorage.removeItem(KEY_EDUCATION);
     localStorage.removeItem(KEY_GENERATED);
   } catch {}
 }
