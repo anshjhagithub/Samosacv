@@ -65,8 +65,8 @@ export async function POST(request: Request) {
       lineItems = typeof cart === "object" && !Array.isArray(cart)
         ? getLineItemsForOrder(cart as Partial<Record<FeatureSlug, boolean>>)
         : { resume_pdf: true };
-      amount = typeof body.amount === "number" && body.amount >= 0
-        ? body.amount
+      amount = Number(body.amount) > 0
+        ? Number(body.amount)
         : getCartTotal(cart as Partial<Record<FeatureSlug, boolean>>);
       if (amount < FEATURE_PRICING.resume_pdf) {
         return NextResponse.json(
