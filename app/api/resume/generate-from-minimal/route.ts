@@ -46,6 +46,7 @@ export async function POST(request: Request) {
     location?: string;
     jobDescription?: string;
     experiences?: { jobTitle?: string; company?: string; duration?: string }[];
+    education?: { degree?: string; field?: string; school?: string; duration?: string }[];
     projects?: { title?: string; oneLiner?: string }[];
     apiKey?: string | null;
   };
@@ -74,6 +75,16 @@ export async function POST(request: Request) {
         }))
         .filter((e) => e.jobTitle)
     : [];
+  const education = Array.isArray(body.education)
+    ? body.education
+        .map((e) => ({
+          degree: (e?.degree ?? "").trim(),
+          field: (e?.field ?? "").trim(),
+          school: (e?.school ?? "").trim(),
+          duration: (e?.duration ?? "").trim(),
+        }))
+        .filter((e) => e.degree || e.school)
+    : [];
   const projects = Array.isArray(body.projects)
     ? body.projects
         .map((p) => ({
@@ -91,6 +102,7 @@ export async function POST(request: Request) {
       location: body.location?.trim(),
       jobDescription: body.jobDescription?.trim(),
       experiences,
+      education,
       projects,
       apiKey: body.apiKey ?? null,
     });

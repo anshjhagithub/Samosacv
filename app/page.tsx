@@ -93,7 +93,7 @@ const COMPARISON = [
 ];
 
 const FAQ_ITEMS = [
-  { q: "Do I need an account?", a: "Yes, sign-up is required to create and track your resumes. Sign in with Google \u2014 it takes 2 seconds." },
+  { q: "Do I need an account?", a: "No! No sign-up is required. You can generate, preview, and download your resume instantly without an account." },
   { q: "What do I get for free?", a: "ATS scoring, skill gap analysis, bullet suggestions, 82 role presets, 35+ template previews, and role intelligence \u2014 all completely free, no sign-up needed." },
   { q: "Why is it only \u20B915?", a: "We use efficient AI models and have no subscription overhead. You pay only when you generate an AI-powered resume. No recurring fees, no hidden charges." },
   { q: "Can I use my existing resume?", a: "Yes. Upload PDF or paste LinkedIn text. Our AI extracts and rewrites with impact-driven language." },

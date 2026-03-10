@@ -1,26 +1,13 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { deductRegenerationCredit } from "@/lib/regeneration";
 import { extractResume } from "@/lib/ai/resume-extract";
+import { getGuestUserId } from "@/lib/guestUser";
 
 export const maxDuration = 60;
 
-const UNLIMITED_REGEN_EMAIL = "anshjha8463@gmail.com";
-
-/**
- * Consume one ₹5 regeneration credit and run extract again (same AI route).
- * Body: { resumeId: string, content: string, jobDescription?: string }
- * Special: anshjha8463@gmail.com has unlimited regenerations (no credit consumed).
- */
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const userId = await getGuestUserId();
 
     const body = await request.json().catch(() => ({}));
     const resumeId = typeof body.resumeId === "string" ? body.resumeId.trim() : "";
@@ -32,15 +19,12 @@ export async function POST(request: Request) {
       );
     }
 
-    const hasUnlimitedRegen = user.email?.toLowerCase() === UNLIMITED_REGEN_EMAIL;
-    if (!hasUnlimitedRegen) {
-      const consumed = await deductRegenerationCredit(user.id, resumeId);
-      if (!consumed) {
-        return NextResponse.json(
-          { error: "No regeneration credit. Pay ₹5 to regenerate.", code: "NO_CREDIT" },
-          { status: 402 }
-        );
-      }
+    const consumed = await deductRegenerationCredit(userId, resumeId);
+    if (!consumed) {
+      return NextResponse.json(
+        { error: "No regeneration credit. Pay ₹5 to regenerate.", code: "NO_CREDIT" },
+        { status: 402 }
+      );
     }
 
     const jobDescription = typeof body.jobDescription === "string" ? body.jobDescription.trim() : undefined;

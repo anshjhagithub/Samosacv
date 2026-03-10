@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getBasicInfo, getExperienceList, getProjectList, setProjectList, type ProjectEntryInput } from "@/lib/resumeFlowStorage";
+import { getBasicInfo, getExperienceList, getEducationList, getProjectList, setProjectList, type ProjectEntryInput } from "@/lib/resumeFlowStorage";
 import { saveResume, loadResume, setUnlockPreview } from "@/lib/storage/resumeStorage";
 import { createClient } from "@/lib/supabase/client";
 import { rolePresets, ROLE_IDS } from "@/lib/rolePresets";
@@ -87,6 +87,7 @@ export default function ResumeProjectsPage() {
         location: basic.location || undefined,
         jobDescription: basic.jobDescription || undefined,
         experiences: experiences.map((e) => ({ jobTitle: e.jobTitle, company: e.company, duration: e.duration })),
+        education: getEducationList().filter((e) => e.degree.trim()).map((e) => ({ degree: e.degree, field: e.field, school: e.school, duration: e.duration })),
         projects: projectsFiltered.map((p) => ({ title: p.title, oneLiner: p.oneLiner || undefined })),
       };
       if (typeof window !== "undefined") {

@@ -107,61 +107,6 @@ export async function POST(request: Request) {
   const generationToken = request.headers.get("X-Generation-Token")?.trim();
   const resumeOrderId = request.headers.get("X-Resume-Order-Id")?.trim();
 
-  if (ENFORCE_LIMITS) {
-    if (!jwt) {
-      return NextResponse.json(
-        { error: "Sign in required", code: "UNAUTHORIZED" },
-        { status: 401 }
-      );
-    }
-    if (resumeOrderId) {
-      const supabase = await createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        return NextResponse.json({ error: "Sign in required", code: "UNAUTHORIZED" }, { status: 401 });
-      }
-      const { data: order } = await supabase
-        .from("orders")
-        .select("order_id, user_id, status")
-        .eq("order_id", resumeOrderId)
-        .eq("user_id", user.id)
-        .single();
-      if (!order || order.status !== "paid") {
-        return NextResponse.json(
-          { error: "Valid payment required. Complete payment and try again.", code: "PAYMENT_REQUIRED" },
-          { status: 402 }
-        );
-      }
-    } else if (generationToken) {
-      if (generationToken === "dev-bypass-no-limits") {
-        // Allow dev bypass when Edge Functions are unreachable (allocate returns this in dev)
-        const supabase = await createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          return NextResponse.json({ error: "Sign in required", code: "UNAUTHORIZED" }, { status: 401 });
-        }
-      } else {
-        const valid = await validateToken(jwt, generationToken);
-        if ("error" in valid) {
-          return NextResponse.json(
-            { error: "Invalid or expired generation token", code: "INVALID_TOKEN" },
-            { status: 401 }
-          );
-        }
-      }
-    } else {
-      // Pay-at-download flow (like get started): signed-in user can extract; payment required at download in builder
-      const supabase = await createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        return NextResponse.json(
-          { error: "Sign in required", code: "UNAUTHORIZED" },
-          { status: 401 }
-        );
-      }
-    }
-  }
-
   try {
     const contentType = request.headers.get("content-type") ?? "";
     let rawContent = "";

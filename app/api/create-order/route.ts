@@ -4,6 +4,7 @@ import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { Cashfree, CFEnvironment } from "cashfree-pg";
 import { getLineItemsForOrder, getCartTotal } from "@/lib/cart";
 import { FEATURE_PRICING, type FeatureSlug } from "@/lib/pricing";
+import { getGuestUserId } from "@/lib/guestUser";
 
 const PREMIUM_PACK_AMOUNT = 49;
 
@@ -27,13 +28,8 @@ function getSupabaseAdmin() {
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const admin = getSupabaseAdmin();
+    const userId = await getGuestUserId();
 
     const body = await request.json().catch(() => ({}));
     const isRegeneration = body.type === "regeneration" && body.resumeId;
@@ -50,20 +46,20 @@ export async function POST(request: Request) {
     if (isResumeUpload) {
       amount = FEATURE_PRICING.resume_pdf;
       lineItems = { resume_pdf: true };
-      orderId = `upload_${user.id}_${Date.now()}`;
+      orderId = `upload_${userId}_${Date.now()}`;
     } else if (isRegeneration) {
       amount = FEATURE_PRICING.resume_regeneration;
       lineItems = { resume_regeneration: true };
-      orderId = `regen_${user.id}_${body.resumeId}_${Date.now()}`;
+      orderId = `regen_${userId}_${body.resumeId}_${Date.now()}`;
     } else if (isBuilderImprove) {
       const feature = body.feature as "summary_improve" | "project_improve";
       amount = FEATURE_PRICING[feature];
       lineItems = { [feature]: true };
-      orderId = `improve_${user.id}_${feature}_${Date.now()}`;
+      orderId = `improve_${userId}_${feature}_${Date.now()}`;
     } else if (isUpsell) {
       amount = 12;
       lineItems = { mock_interview_live: true };
-      orderId = `order_${user.id}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+      orderId = `order_${userId}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
     } else if (isToolkitCart) {
       const cart = body.cart ?? body.line_items ?? { resume_pdf: true };
       lineItems = typeof cart === "object" && !Array.isArray(cart)
@@ -78,11 +74,11 @@ export async function POST(request: Request) {
           { status: 400 }
         );
       }
-      orderId = `order_${user.id}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+      orderId = `order_${userId}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
     } else {
       amount = typeof body.amount === "number" ? body.amount : PREMIUM_PACK_AMOUNT;
       lineItems = { resume_pdf: true };
-      orderId = `order_${user.id}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+      orderId = `order_${userId}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
     }
 
     if (amount < 1) {
@@ -93,10 +89,9 @@ export async function POST(request: Request) {
     const amountPaise = Math.round(amount * 100);
 
     if (!isRegeneration) {
-      const admin = getSupabaseAdmin();
       const { error: insertError } = await admin.from("orders").insert({
         order_id: orderId,
-        user_id: user.id,
+        user_id: userId,
         resume_id: resumeId,
         line_items: lineItems,
         amount_paise: amountPaise,
@@ -114,9 +109,9 @@ export async function POST(request: Request) {
       order_currency: "INR",
       order_id: orderId,
       customer_details: {
-        customer_id: user.id,
-        customer_email: user.email ?? "",
-        customer_phone: (user.phone as string) ?? "",
+        customer_id: userId,
+        customer_email: "guest@samosacv.com",
+        customer_phone: "9999999999",
       },
       order_meta: {
         return_url: `${baseUrl}/payment-status?order_id={order_id}${returnTo}`,

@@ -4,9 +4,7 @@
 import { Suspense, useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { createClient } from "@/lib/supabase/client";
 import { saveResume, setUnlockPreview } from "@/lib/storage/resumeStorage";
-import { LoginModal } from "@/components/auth/LoginModal";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 
 type View = "choice" | "upload";
@@ -15,7 +13,6 @@ function CreatePageContent() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [view, setView] = useState<View>("choice");
-  const [showLogin, setShowLogin] = useState(false);
   const [content, setContent] = useState("");
   const [jobDescription, setJobDescription] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -44,33 +41,22 @@ function CreatePageContent() {
       setSubmitError("Paste your resume text or upload a PDF.");
       return;
     }
-    const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) {
-      setShowLogin(true);
-      return;
-    }
     setLoading(true);
     try {
-      const authHeaders = { Authorization: `Bearer ${session.access_token}` };
       let res: Response;
       if (file && !content.trim()) {
         const formData = new FormData();
         formData.append("file", file);
         if (jobDescription.trim()) formData.append("jobDescription", jobDescription.trim());
-        res = await fetch("/api/resume/extract", { method: "POST", headers: authHeaders, body: formData });
+        res = await fetch("/api/resume/extract", { method: "POST", body: formData });
       } else {
         res = await fetch("/api/resume/extract", {
           method: "POST",
-          headers: { "Content-Type": "application/json", ...authHeaders },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ content: content.trim() || "", jobDescription: jobDescription.trim() || undefined }),
         });
       }
       const data = await res.json();
-      if (res.status === 401) {
-        setSubmitError("Please sign in again.");
-        return;
-      }
       if (!res.ok) {
         const raw = data.error ?? "Failed to generate resume";
         const friendly =
@@ -316,8 +302,6 @@ function CreatePageContent() {
         </AnimatePresence>
         )}
       </main>
-
-      <LoginModal open={showLogin} onClose={() => setShowLogin(false)} redirectAfterLogin="/create" />
     </div>
   );
 }

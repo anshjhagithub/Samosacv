@@ -18,7 +18,6 @@ import {
 } from "@/types/resume";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { SamosaLogoFull } from "@/components/brand/SamosaLogo";
-import { LoginModal } from "@/components/auth/LoginModal";
 import { loadOnboarding } from "@/lib/onboardingStorage";
 import { getUnlockPreview, setUnlockPreview } from "@/lib/storage/resumeStorage";
 import { openCashfreeCheckout } from "@/lib/cashfree";
@@ -77,7 +76,6 @@ export function ResumeBuilder({ data, onUpdate }: ResumeBuilderProps) {
   const persist = useCallback((next: ResumeData) => onUpdate(next), [onUpdate]);
   const [isPaid, setIsPaid] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
   const [purchasedAddons, setPurchasedAddons] = useState<FeatureSlug[]>([]);
   const handleDownloadResume = useCallback(() => {
     router.push("/unlock");
@@ -1094,12 +1092,6 @@ export function ResumeBuilder({ data, onUpdate }: ResumeBuilderProps) {
           </div>
         </div>
       </main>
-
-      <LoginModal
-        open={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
-        redirectAfterLogin="/builder"
-      />
     </div>
   );
 }

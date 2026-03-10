@@ -52,6 +52,7 @@ export interface GenerateFromMinimalInput {
   location?: string;
   jobDescription?: string;
   experiences: { jobTitle: string; company?: string; duration?: string }[];
+  education: { degree: string; field?: string; school?: string; duration?: string }[];
   projects: { title: string; oneLiner?: string }[];
   apiKey?: string | null;
 }
@@ -60,7 +61,7 @@ export async function generateFromMinimal(params: GenerateFromMinimalInput): Pro
   resume: ResumeData;
   usage?: { promptTokens: number; completionTokens: number };
 }> {
-  const { fullName, targetRole, experienceLevel, location, jobDescription, experiences, projects, apiKey } = params;
+  const { fullName, targetRole, experienceLevel, location, jobDescription, experiences, education: educationInput, projects, apiKey } = params;
   const resolved = resolveModelOptions(apiKey ? { apiKey } : null);
   const model = getModel(resolved);
 
@@ -83,6 +84,16 @@ export async function generateFromMinimal(params: GenerateFromMinimalInput): Pro
           .join("\n")
       : "- (No job titles provided)";
 
+  const eduBlock =
+    educationInput.length > 0
+      ? educationInput
+          .map(
+            (e) =>
+              `- ${e.degree}${e.field ? ` in ${e.field}` : ""}${e.school ? ` at ${e.school}` : ""}${e.duration ? ` (${e.duration})` : ""}`
+          )
+          .join("\n")
+      : "- (No education provided)";
+
   const projBlock =
     projects.length > 0
       ? projects.map((p) => `- ${p.title}${p.oneLiner ? `: ${p.oneLiner}` : ""}`).join("\n")
@@ -97,7 +108,11 @@ Experience Level: ${levelLabel}
 ${location ? `Location: ${location}` : ""}
 
 Job titles (and optional company/duration):
+Jobs:
 ${expBlock}
+
+Education:
+${eduBlock}
 
 Projects (and optional one-line description):
 ${projBlock}
@@ -109,7 +124,7 @@ ${jobDescription ? `\n--- JOB DESCRIPTION (tailor resume to this) ---\n${jobDesc
 3. For each job title listed above, create ONE work experience entry with company (use "${experiences[0]?.company || "Company"}" or infer), startDate/endDate (infer plausible dates from ${levelLabel}), and 4-6 impact bullets. Use action verbs and realistic metrics.
 4. Infer 8-15 skills from the role, job titles, and projects. Include technical skills, tools, and soft skills.
 5. For each project listed, use the EXACT "title" and "description" (one-line) as provided by the candidate above; do not rewrite them. Only generate the "bullets" array (at least 3 bullet points per project). Each bullet must use an action verb, mention technologies or methods, and state an outcome. Use ATS keywords relevant to ${targetRole}.
-6. Include one education placeholder: school "—", degree "—", field "—", dates "—" if not provided.
+6. For education: Include the education data EXACTLY as provided by the user if present. Make sure to map school, degree, field and startDate/endDate or duration as provided. If no education is provided, use a placeholder: school "—", degree "—", field "—", dates "—".
 7. Output valid JSON matching the schema. Include "projects" array; each project MUST have "title", "description", and "bullets" (exactly 3 or more strings—this is required).`;
 
   const result = await generateObject({
@@ -152,14 +167,14 @@ ${jobDescription ? `\n--- JOB DESCRIPTION (tailor resume to this) ---\n${jobDesc
   }));
   if (experience.length === 0) experience.push(createEmptyExperience(crypto.randomUUID?.() ?? "exp-0"));
 
-  const educationList = object.education?.length ? object.education : [];
-  const education = educationList.map((e: Record<string, unknown>, i: number) => ({
+  const educationList = object.education?.length ? object.education : educationInput;
+  const education = educationList.map((e: any, i: number) => ({
     ...createEmptyEducation(crypto.randomUUID?.() ?? `edu-${i}`),
     school: (e.school as string) ?? "",
     degree: (e.degree as string) ?? "",
     field: (e.field as string) ?? "",
-    startDate: (e.startDate as string) ?? "",
-    endDate: (e.endDate as string) ?? "",
+    startDate: (e.startDate as string) ?? (e.duration?.split("-")?.[0] as string) ?? "",
+    endDate: (e.endDate as string) ?? (e.duration?.split("-")?.[1] as string) ?? (e.duration as string) ?? "",
     gpa: (e.gpa as string) ?? "",
   }));
   if (education.length === 0) education.push(createEmptyEducation(crypto.randomUUID?.() ?? "edu-0"));

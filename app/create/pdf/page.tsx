@@ -4,9 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { createClient } from "@/lib/supabase/client";
 import { saveResume, setUnlockPreview } from "@/lib/storage/resumeStorage";
-import { LoginModal } from "@/components/auth/LoginModal";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 
 const inputClass =
@@ -14,7 +12,6 @@ const inputClass =
 
 export default function CreatePdfPage() {
   const router = useRouter();
-  const [showLogin, setShowLogin] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [jobDescription, setJobDescription] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -35,12 +32,6 @@ export default function CreatePdfPage() {
       setSubmitError("Choose a PDF file to upload.");
       return;
     }
-    const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) {
-      setShowLogin(true);
-      return;
-    }
     setLoading(true);
     try {
       const formData = new FormData();
@@ -48,14 +39,9 @@ export default function CreatePdfPage() {
       if (jobDescription.trim()) formData.append("jobDescription", jobDescription.trim());
       const res = await fetch("/api/resume/extract", {
         method: "POST",
-        headers: { Authorization: `Bearer ${session.access_token}` },
         body: formData,
       });
       const data = await res.json();
-      if (res.status === 401) {
-        setSubmitError("Please sign in again.");
-        return;
-      }
       if (!res.ok) {
         const raw = data.error ?? "Failed to generate resume";
         const friendly =
@@ -180,8 +166,6 @@ export default function CreatePdfPage() {
           </Link>
         </p>
       </main>
-
-      <LoginModal open={showLogin} onClose={() => setShowLogin(false)} redirectAfterLogin="/create/pdf" />
     </div>
   );
 }

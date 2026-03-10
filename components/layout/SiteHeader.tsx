@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { AuthButton } from "@/components/auth/AuthButton";
 import { SamosaLogoFull } from "@/components/brand/SamosaLogo";
 
 const navItems = [
@@ -83,7 +82,6 @@ export function SiteHeader() {
           </Link>
         </nav>
         <div className="flex items-center gap-3">
-          <AuthButton />
           <Link
             href="/create"
             className="text-sm rounded-xl bg-amber-600 px-4 py-2.5 font-semibold text-white hover:bg-amber-700 transition-all shadow-md shadow-amber-900/10"

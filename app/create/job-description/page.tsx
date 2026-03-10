@@ -4,9 +4,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { createClient } from "@/lib/supabase/client";
 import { saveResume, setUnlockPreview } from "@/lib/storage/resumeStorage";
-import { LoginModal } from "@/components/auth/LoginModal";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { rolePresets, ROLE_IDS } from "@/lib/rolePresets";
 import { type ExperienceLevel } from "@/lib/resumeFlowStorage";
@@ -23,7 +21,6 @@ const inputClass =
 
 export default function CreateJobDescriptionPage() {
   const router = useRouter();
-  const [showLogin, setShowLogin] = useState(false);
   const [fullName, setFullName] = useState("");
   const [targetRole, setTargetRole] = useState("");
   const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel>("1-3");
@@ -57,33 +54,10 @@ export default function CreateJobDescriptionPage() {
       setSubmitError("Please fill out your name, target role, and paste a job description (at least 50 characters).");
       return;
     }
-    const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    
     setLoading(true);
     try {
       const authHeaders: Record<string, string> = { "Content-Type": "application/json" };
       let generationToken: string | null = null;
-      
-      if (session?.access_token) {
-        authHeaders.Authorization = `Bearer ${session.access_token}`;
-        const allocateRes = await fetch("/api/allocate", { method: "POST", headers: authHeaders, body: JSON.stringify({}) });
-        if (allocateRes.ok) {
-          const allocateData = await allocateRes.json();
-          generationToken = allocateData.token ?? null;
-        }
-        if (allocateRes.status === 402) {
-          setSubmitError("Payment required to generate. Please complete payment and try again.");
-          setLoading(false);
-          return;
-        }
-      } else {
-         setShowLogin(true);
-         setLoading(false);
-         return;
-      }
-      
-      if (generationToken) authHeaders["X-Generation-Token"] = generationToken;
 
       const payload = {
         fullName: fullName.trim(),
@@ -101,10 +75,6 @@ export default function CreateJobDescriptionPage() {
       });
       
       const data = await res.json();
-      if (res.status === 401) {
-        setSubmitError("Please sign in again.");
-        return;
-      }
       if (res.status === 402) {
          setSubmitError(data.message || data.error || "Payment required to generate.");
          return;
@@ -279,8 +249,6 @@ export default function CreateJobDescriptionPage() {
           </Link>
         </p>
       </main>
-
-      <LoginModal open={showLogin} onClose={() => setShowLogin(false)} redirectAfterLogin="/create/job-description" />
     </div>
   );
 }
