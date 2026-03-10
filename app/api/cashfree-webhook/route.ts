@@ -1,128 +1,48 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { Cashfree, CFEnvironment } from "cashfree-pg";
+import crypto from "crypto";
 
-function getCashfreeClient() {
-  const appId = process.env.CASHFREE_APP_ID?.trim();
-  const secretKey = process.env.CASHFREE_SECRET_KEY?.trim();
-  const env = process.env.CASHFREE_ENV?.toUpperCase();
-  if (!appId || !secretKey) throw new Error("Cashfree not configured");
-  const cfEnv = env === "PROD" ? CFEnvironment.PRODUCTION : CFEnvironment.SANDBOX;
-  return new Cashfree(cfEnv, appId, secretKey);
-}
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
-function getSupabaseAdmin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-  if (!url || !key) throw new Error("Supabase admin not configured");
-  return createClient(url, key);
-}
-
-export async function POST(request: Request) {
-  const signature = request.headers.get("x-webhook-signature") ?? "";
-  const timestamp = request.headers.get("x-webhook-timestamp") ?? "";
-  const rawBody = await request.text();
-  if (!signature || !timestamp) {
-    return NextResponse.json({ error: "Missing signature or timestamp" }, { status: 400 });
-  }
-
+export async function POST(req: Request) {
   try {
-    const cashfree = getCashfreeClient();
-    cashfree.PGVerifyWebhookSignature(signature, rawBody, timestamp);
-  } catch {
-    return NextResponse.json({ error: "Webhook verification failed" }, { status: 400 });
-  }
+    const body = await req.text();
+    const signature = req.headers.get("x-webhook-signature") || "";
 
-  const payload = JSON.parse(rawBody) as {
-    type?: string;
-    data?: {
-      order?: { order_id?: string };
-      order_id?: string;
-      cf_payment_id?: string;
-      payment_status?: string;
-      customer_id?: string;
-    };
-  };
-  const eventType = payload.type ?? "";
-  const orderId = payload.data?.order?.order_id ?? (payload.data as { order_id?: string })?.order_id ?? "";
-  const paymentId = payload.data?.cf_payment_id ?? "";
-  const paymentStatus = payload.data?.payment_status ?? "";
-  const customerId = payload.data?.customer_id ?? "";
+    const expectedSignature = crypto
+      .createHmac("sha256", process.env.CASHFREE_SECRET_KEY!)
+      .update(body)
+      .digest("base64");
 
-  if (!orderId) {
-    return NextResponse.json({ error: "Missing order_id" }, { status: 400 });
-  }
-
-  const supabase = getSupabaseAdmin();
-  const isSuccess = eventType.includes("PAYMENT_SUCCESS") || paymentStatus === "SUCCESS";
-
-  if (isSuccess) {
-    const userId = customerId || (orderId.startsWith("order_") ? orderId.split("_")[1] : null);
-    if (!userId) {
-      return NextResponse.json({ error: "Missing customer_id" }, { status: 400 });
+    if (signature !== expectedSignature) {
+      return NextResponse.json(
+        { error: "Invalid signature" },
+        { status: 401 }
+      );
     }
 
-    // Mark order as paid
-    const { error: orderUpdateError } = await supabase
-      .from("orders")
-      .update({
-        status: "paid",
-        paid_at: new Date().toISOString(),
-        cashfree_payment_id: paymentId || null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("order_id", orderId);
-    if (orderUpdateError) {
-      console.error("Order update failed:", orderUpdateError);
+    const data = JSON.parse(body);
+
+    const orderId = data.data?.order?.order_id;
+    const paymentStatus = data.data?.payment?.payment_status;
+
+    if (paymentStatus === "SUCCESS") {
+      await supabaseAdmin
+        .from("orders")
+        .update({ status: "paid" })
+        .eq("order_id", orderId);
     }
 
-    // Handle regeneration orders (₹15)
-    const isRegenOrder = orderId.startsWith("regen_");
-    if (isRegenOrder) {
-      const parts = orderId.split("_");
-      const uid = parts[1];
-      const resumeId = parts[2];
-      if (uid && resumeId) {
-        await supabase.from("regeneration_history").insert({
-          user_id: uid,
-          resume_id: resumeId,
-          order_id: orderId,
-          amount_paise: 200,
-        });
-      }
-    }
+    return NextResponse.json({ received: true });
+  } catch (err) {
+    console.error(err);
 
-    // Handle builder improve orders (₹5)
-    const isImproveOrder = orderId.startsWith("improve_");
-    if (isImproveOrder) {
-      const parts = orderId.split("_");
-      const uid = parts[1];
-      const feature_type = parts[2] === "summary" && parts[3] === "improve" ? "summary_improve" : parts[2] === "project" && parts[3] === "improve" ? "project_improve" : null;
-      if (uid && feature_type) {
-        await supabase.from("improve_credits").insert({
-          user_id: uid,
-          feature_type,
-          order_id: orderId,
-        });
-      }
-    }
-
-    // Update profile subscription status
-    const { error: upsertError } = await supabase.from("profiles").upsert(
-      {
-        id: userId,
-        subscription_status: "active",
-        plan: "pro",
-        cashfree_order_id: orderId,
-        cashfree_payment_id: paymentId || null,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "id" }
+    return NextResponse.json(
+      { error: "Webhook error" },
+      { status: 500 }
     );
-    if (upsertError) {
-      return NextResponse.json({ error: upsertError.message }, { status: 500 });
-    }
   }
-
-  return NextResponse.json({ received: true }, { status: 200 });
 }
