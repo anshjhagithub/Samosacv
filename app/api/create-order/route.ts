@@ -48,7 +48,8 @@ export async function POST(req: Request) {
 
     const amountPaise = amount * 100;
 
-    const { error } = await supabaseAdmin.from("orders").insert({
+    // Save order in Supabase
+    const { error: dbError } = await supabaseAdmin.from("orders").insert({
       order_id: orderId,
       user_id: userId,
       resume_id: resumeId,
@@ -57,43 +58,59 @@ export async function POST(req: Request) {
       status: "pending",
     });
 
-    if (error) {
-      console.error(error);
+    if (dbError) {
+      console.error("DB error:", dbError);
       return NextResponse.json(
         { error: "Failed to create order record" },
         { status: 500 }
       );
     }
 
-    const cashfreeResponse = await fetch(
-      `${process.env.CASHFREE_ENV === "PROD"
+    // Generate dummy phone (Cashfree requires it)
+    const phone =
+      "9" + Math.floor(100000000 + Math.random() * 900000000).toString();
+
+    const cashfreeUrl =
+      process.env.CASHFREE_ENV === "PROD"
         ? "https://api.cashfree.com/pg/orders"
-        : "https://sandbox.cashfree.com/pg/orders"
-      }`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-version": "2022-09-01",
-          "x-client-id": process.env.CASHFREE_APP_ID!,
-          "x-client-secret": process.env.CASHFREE_SECRET_KEY!,
+        : "https://sandbox.cashfree.com/pg/orders";
+
+    const cashfreeResponse = await fetch(cashfreeUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-version": "2022-09-01",
+        "x-client-id": process.env.CASHFREE_APP_ID!,
+        "x-client-secret": process.env.CASHFREE_SECRET_KEY!,
+      },
+      body: JSON.stringify({
+        order_id: orderId,
+        order_amount: amount,
+        order_currency: "INR",
+        customer_details: {
+          customer_id: userId,
+          customer_email: "guest@samosacv.com",
+          customer_phone: phone,
         },
-        body: JSON.stringify({
-          order_id: orderId,
-          order_amount: amount,
-          order_currency: "INR",
-          customer_details: {
-            customer_id: userId,
-          },
-        }),
-      }
-    );
+      }),
+    });
 
     const data = await cashfreeResponse.json();
 
-    return NextResponse.json(data);
+    if (!cashfreeResponse.ok) {
+      console.error("Cashfree error:", data);
+      return NextResponse.json(
+        { error: "Cashfree order creation failed", details: data },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      order_id: orderId,
+      payment_session_id: data.payment_session_id,
+    });
   } catch (err) {
-    console.error(err);
+    console.error("Server error:", err);
 
     return NextResponse.json(
       { error: "Server error" },
