@@ -26,6 +26,18 @@ function PaymentStatusContent() {
     }
   }, [status, returnTo, orderId]);
 
+  // After payment for unlock/regular order, redirect to review page with download access
+  useEffect(() => {
+    if (status === "success" && !returnTo && orderId) {
+      // Set a flag in localStorage to indicate payment was successful for this order
+      if (typeof window !== "undefined") {
+        localStorage.setItem(`payment_success_${orderId}`, "true");
+        // Redirect to review page where download will be available
+        window.location.href = `/resume/review`;
+      }
+    }
+  }, [status, orderId, returnTo]);
+
   const isRegenOrder = orderId?.startsWith("regen_") ?? false;
   const isUploadOrder = orderId?.startsWith("upload_") ?? false;
 

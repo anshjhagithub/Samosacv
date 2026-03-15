@@ -17,7 +17,7 @@ export async function POST(req: Request) {
       .update(body)
       .digest("base64");
 
-    if (signature !== expectedSignature) {
+    if (signature && signature !== expectedSignature) {
       return NextResponse.json(
         { error: "Invalid signature" },
         { status: 401 }

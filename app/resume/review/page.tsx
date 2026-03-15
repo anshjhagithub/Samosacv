@@ -37,11 +37,18 @@ export default function ResumeReviewPage() {
   const [generated, setGenerated] = useState<ReturnType<typeof getGeneratedResult>>(null);
   const [modifierLoading, setModifierLoading] = useState<ResumeModifier | null>(null);
   const [showUnlockModal, setShowUnlockModal] = useState(false);
+  const [hasPaymentSuccess, setHasPaymentSuccess] = useState(false);
 
   useEffect(() => {
     const raw = loadResume();
     setGenerated(getGeneratedResult());
     setData(raw ? ensureProjects(raw) : null);
+    
+    // Check if user has successful payment for download access
+    if (typeof window !== "undefined") {
+      const paymentKeys = Object.keys(localStorage).filter(key => key.startsWith("payment_success_"));
+      setHasPaymentSuccess(paymentKeys.length > 0);
+    }
   }, []);
 
   const persist = useCallback((next: ResumeData) => {
@@ -134,13 +141,29 @@ export default function ResumeReviewPage() {
         >
           Open Full Builder
         </Link>
-        <button
-          type="button"
-          onClick={() => setShowUnlockModal(true)}
-          className="rounded-xl border-2 border-amber-300 bg-amber-50 px-5 py-2.5 text-sm font-semibold text-amber-800 hover:bg-amber-100 transition-all"
-        >
-          Download PDF
-        </button>
+        {hasPaymentSuccess ? (
+          <button
+            type="button"
+            onClick={() => {
+              // Trigger actual download since payment was successful
+              const link = document.createElement('a');
+              link.href = '/api/resume/download';
+              link.download = 'resume.pdf';
+              link.click();
+            }}
+            className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 transition-all shadow-md shadow-emerald-900/10"
+          >
+            Download PDF
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowUnlockModal(true)}
+            className="rounded-xl border-2 border-amber-300 bg-amber-50 px-5 py-2.5 text-sm font-semibold text-amber-800 hover:bg-amber-100 transition-all"
+          >
+            Download PDF
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
