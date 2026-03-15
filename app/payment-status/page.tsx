@@ -32,8 +32,12 @@ function PaymentStatusContent() {
       // Set a flag in localStorage to indicate payment was successful for this order
       if (typeof window !== "undefined") {
         localStorage.setItem(`payment_success_${orderId}`, "true");
-        // Redirect to review page where download will be available
-        window.location.href = `/resume/review`;
+        // Add a small delay to show success message, then redirect
+        const timer = setTimeout(() => {
+          window.location.href = `/resume/review`;
+        }, 2000); // 2 second delay to show success message
+        
+        return () => clearTimeout(timer);
       }
     }
   }, [status, orderId, returnTo]);
@@ -88,6 +92,14 @@ function PaymentStatusContent() {
                 </Link>
                 <span className="mx-2 text-stone-400">·</span>
                 <Link href="/create" className="text-sm text-amber-700 hover:underline font-medium">Create another</Link>
+                {!isRegenOrder && (
+                  <>
+                    <span className="mx-2 text-stone-400">·</span>
+                    <Link href="/resume/review" className="text-sm text-emerald-600 hover:text-emerald-700 font-semibold">
+                      Download Resume Now
+                    </Link>
+                  </>
+                )}
               </>
             )}
             {showUpsell && !isRegenOrder && !isUploadOrder && (
