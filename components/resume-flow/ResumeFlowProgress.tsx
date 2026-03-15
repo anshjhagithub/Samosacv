@@ -11,13 +11,13 @@ const STEPS = [
 
 export function ResumeFlowProgress({ currentStep }: { currentStep: 1 | 2 | 3 | 4 | 5 | 6 }) {
   return (
-    <div className="flex items-center gap-2 sm:gap-4">
+    <div className="flex items-center gap-2 sm:gap-4 max-w-full overflow-hidden">
       {STEPS.map((step, i) => {
         const stepNum = i + 1;
         const isActive = stepNum === currentStep;
         const isPast = stepNum < currentStep;
         return (
-          <div key={step.path} className="flex items-center">
+          <div key={step.path} className="flex items-center flex-shrink-0">
             <div
               className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition-colors ${
                 isActive ? "bg-amber-600 text-white" : isPast ? "bg-amber-100 text-amber-800" : "bg-stone-100 text-stone-400"

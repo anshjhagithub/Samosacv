@@ -8,11 +8,14 @@ const supabaseAdmin = createClient(
 );
 
 const FEATURE_PRICING: Record<string, number> = {
-  resume_pdf: 7,
+  resume_pdf: 15,
   skill_roadmap: 4,
   linkedin_optimizer: 3,
   cover_letter: 5,
   interview_pack: 9,
+  ats_improver: 5,
+  ats_breakdown: 3,
+
 };
 
 function getCartTotal(cart: Record<string, boolean>) {
@@ -34,10 +37,10 @@ export async function POST(req: Request) {
     const cart = body.cart || {};
     const userId = body.userId || "guest";
     const resumeId = body.resumeId || null;
+    const mobileNumber = body.mobileNumber || null;
+    const amount = body.amount || getCartTotal(cart);
 
-    const amount = getCartTotal(cart);
-
-    if (amount < FEATURE_PRICING.resume_pdf) {
+    if (amount < FEATURE_PRICING.resume_pdf && !body.amount) {
       return NextResponse.json(
         { error: "Cart must include resume PDF" },
         { status: 400 }
@@ -66,9 +69,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // Generate dummy phone (Cashfree requires it)
-    const phone =
-      "9" + Math.floor(100000000 + Math.random() * 900000000).toString();
+    // Use provided mobile number or generate dummy phone (Cashfree requires it)
+    const phone = mobileNumber || "9" + Math.floor(100000000 + Math.random() * 900000000).toString();
 
     const cashfreeUrl =
       process.env.CASHFREE_ENV === "PROD"

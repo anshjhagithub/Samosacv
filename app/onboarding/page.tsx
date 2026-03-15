@@ -16,7 +16,7 @@ import { saveResume } from "@/lib/storage/resumeStorage";
 import { buildResumeFromOnboarding } from "@/lib/initResumeFromOnboarding";
 import type { TemplateId } from "@/types/resume";
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 5;
 
 function mapOnboardingExperienceToFlow(level: ExperienceLevel): "fresher" | "1-3" | "3-6" | "6+" {
   if (level === "student") return "fresher";
@@ -80,6 +80,12 @@ export default function OnboardingPage() {
     setStep(4);
   };
 
+  const handleTemplateContinue = () => {
+    if (selectedTemplateId) {
+      finishOnboarding(selectedTemplateId);
+    }
+  };
+
   return (
     <div className="min-h-screen ">
       <header className="border-b border-amber-900/5 sticky top-0 z-20 bg-gradient-to-b from-amber-50/98 to-white/95 backdrop-blur-xl">
@@ -118,6 +124,34 @@ export default function OnboardingPage() {
           {step === 4 && (
             <motion.div key="step4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.25 }}>
               <TemplatePicker selectedId={selectedTemplateId} onSelect={setSelectedTemplateId} onUseTemplate={() => finishOnboarding(selectedTemplateId ?? "classic")} />
+            </motion.div>
+          )}
+          {step === 5 && (
+            <motion.div key="step5" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.25 }}>
+              <div className="max-w-3xl mx-auto">
+                <h1 className="text-3xl sm:text-4xl font-serif text-stone-900 text-center mb-2">
+                  Education
+                </h1>
+                <p className="text-stone-600 text-center text-sm sm:text-base mb-10">
+                  Add your educational background to complete your resume.
+                </p>
+                <div className="flex flex-col items-center gap-4">
+                  <button
+                    type="button"
+                    onClick={() => finishOnboarding(selectedTemplateId ?? "classic")}
+                    className="w-full sm:w-auto min-w-[200px] bg-amber-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-amber-700 transition-colors uppercase tracking-wider text-sm"
+                  >
+                    Complete Setup
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => finishOnboarding(selectedTemplateId ?? "classic")}
+                    className="text-stone-500 text-sm hover:text-stone-700"
+                  >
+                    Skip for now
+                  </button>
+                </div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

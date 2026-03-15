@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { openCashfreeCheckout } from "@/lib/cashfree";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
+import { MobileNumberModal } from "@/components/pricing/MobileNumberModal";
 
 const ADDONS = [
   { name: "Resume Generation", price: 15, desc: "AI builds your resume from scratch", popular: true },
@@ -23,15 +24,26 @@ const PREMIUM_AMOUNT = 49;
 export default function PricingPage() {
   const [payLoading, setPayLoading] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
+  const [showMobileModal, setShowMobileModal] = useState(false);
+  const [mobileNumber, setMobileNumber] = useState("");
 
-  const handlePayNow = async () => {
+  const handlePayNow = () => {
     setPayError(null);
+    setShowMobileModal(true);
+  };
+
+  const handleMobileNumberSubmit = async (mobile: string) => {
+    setMobileNumber(mobile);
+    setShowMobileModal(false);
     setPayLoading(true);
     try {
       const res = await fetch("/api/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: PREMIUM_AMOUNT }),
+        body: JSON.stringify({ 
+          amount: PREMIUM_AMOUNT,
+          mobileNumber: mobile 
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) { setPayError(data.error ?? "Failed to create order"); return; }
@@ -40,7 +52,9 @@ export default function PricingPage() {
       await openCashfreeCheckout(sessionId);
     } catch (e) {
       setPayError(e instanceof Error ? e.message : "Payment failed");
-    } finally { setPayLoading(false); }
+    } finally { 
+      setPayLoading(false);
+    }
   };
 
   return (
@@ -82,9 +96,9 @@ export default function PricingPage() {
               ))}
             </div>
             <Link href="/create" className="inline-flex items-center justify-center rounded-xl bg-amber-600 px-8 py-4 text-base font-semibold text-white shadow-lg shadow-amber-900/20 hover:bg-amber-700 transition-all hover:-translate-y-0.5">
-              Start building — first 2 free
+              Start building
             </Link>
-            <p className="mt-3 text-xs text-stone-400">No credit card required for free generations</p>
+            <p className="mt-3 text-xs text-stone-400">Pay per generation. No subscription required.</p>
           </div>
         </motion.section>
 
@@ -165,25 +179,17 @@ export default function PricingPage() {
           </motion.div>
         </section>
 
-        {/* Free tier */}
-        <section className="mb-10">
-          <div className="rounded-2xl border border-stone-200 bg-white p-6 sm:p-8">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-bold text-stone-900">Free tier</h2>
-                <p className="text-stone-500 text-sm mt-1">2 free AI resume generations. All 35+ templates. PDF export.</p>
-              </div>
-              <Link href="/create" className="inline-flex items-center justify-center rounded-xl bg-amber-600 px-6 py-3 text-sm font-semibold text-white hover:bg-amber-700 transition-all shrink-0">
-                Start free
-              </Link>
-            </div>
-          </div>
-        </section>
-
         <p className="text-center text-stone-400 text-xs">
           Sign-up required for payment tracking and generation history. All pricing in INR.
         </p>
       </main>
+
+      <MobileNumberModal
+        isOpen={showMobileModal}
+        onClose={() => setShowMobileModal(false)}
+        onConfirm={handleMobileNumberSubmit}
+        isLoading={payLoading}
+      />
 
       <SiteFooter />
     </div>

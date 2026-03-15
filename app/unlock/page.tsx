@@ -19,6 +19,7 @@ import {
 import { FEATURE_PRICING, type FeatureSlug } from "@/lib/pricing";
 import { openCashfreeCheckout } from "@/lib/cashfree";
 import type { ResumeData } from "@/types/resume";
+import { MobileNumberModal } from "@/components/pricing/MobileNumberModal";
 
 const ADDON_META: Record<string, { label: string; desc: string; color: string; icon: string; preview?: React.ReactNode }> = {
   ats_breakdown: {
@@ -75,6 +76,8 @@ export default function UnlockPage() {
   const [payLoading, setPayLoading] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
   const [expandedAddon, setExpandedAddon] = useState<string | null>(null);
+  const [showMobileModal, setShowMobileModal] = useState(false);
+  const [mobileNumber, setMobileNumber] = useState("");
 
   useEffect(() => {
     const r = loadResume();
@@ -89,15 +92,22 @@ export default function UnlockPage() {
     }
   }, [router]);
 
-  const handleCheckout = async () => {
-    if (!preview?.resumeId || payLoading) return;
+  const handleCheckout = () => {
+    if (!preview?.resumeId) return;
     setPayError(null);
+    setShowMobileModal(true);
+  };
+
+  const handleMobileNumberSubmit = async (mobile: string) => {
+    if (!preview?.resumeId) return;
+    setMobileNumber(mobile);
+    setShowMobileModal(false);
     setPayLoading(true);
     try {
       const res = await fetch("/api/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cart, resumeId: preview.resumeId }),
+        body: JSON.stringify({ cart, resumeId: preview.resumeId, mobileNumber: mobile }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) { setPayError(data.error ?? "Failed to create order"); return; }
@@ -410,6 +420,14 @@ export default function UnlockPage() {
           </div>
         </div>
       </main>
+
+      <MobileNumberModal
+        isOpen={showMobileModal}
+        onClose={() => setShowMobileModal(false)}
+        onConfirm={handleMobileNumberSubmit}
+        isLoading={payLoading}
+      />
+
     </div>
   );
 }
