@@ -86,15 +86,18 @@ export async function POST(req: Request) {
         "x-client-secret": process.env.CASHFREE_SECRET_KEY!,
       },
       body: JSON.stringify({
-        order_id: orderId,
-        order_amount: amount,
-        order_currency: "INR",
-        customer_details: {
-          customer_id: userId,
-          customer_email: "guest@samosacv.com",
-          customer_phone: phone,
-        },
-      }),
+  order_id: orderId,
+  order_amount: amount,
+  order_currency: "INR",
+  customer_details: {
+    customer_id: userId,
+    customer_email: "guest@samosacv.com",
+    customer_phone: phone,
+  },
+  order_meta: {
+    return_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment-status?order_id={order_id}`
+  }
+}),
     });
 
     const data = await cashfreeResponse.json();
