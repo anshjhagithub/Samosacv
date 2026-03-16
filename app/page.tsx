@@ -323,7 +323,7 @@ export default function Home() {
                     <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center mb-5 shadow-md shadow-sky-500/30">
                       <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                     </div>
-                    <h3 className="text-xl font-bold text-stone-900 mb-2">2 fields. That&apos;s it.</h3>
+                    <h3 className="text-xl font-bold text-stone-900 mb-2">2 fields. That's it.</h3>
                     <p className="text-stone-600 text-sm leading-relaxed mb-4">Other builders need 20+ fields. We need your name and target role. AI fills in experience bullets, skills, summary, and projects from 27K+ real resumes.</p>
                     <div className="pt-4 border-t border-sky-200/50 space-y-2">
                       <div className="flex items-center gap-2 rounded-lg border border-sky-200 bg-white px-3 py-2">
