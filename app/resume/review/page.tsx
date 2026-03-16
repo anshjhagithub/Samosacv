@@ -118,6 +118,128 @@ export default function ResumeReviewPage() {
   };
   const updateSkills = (skills: string[]) => setData((d) => (d ? { ...d, skills } : d));
 
+  const handleMaybeLaterDownload = async () => {
+    if (!data) return;
+    
+    try {
+      // Create HTML content for PDF
+      const htmlContent = createResumeHtml(data);
+      
+      // Download PDF (as HTML for now)
+      const htmlBlob = new Blob([htmlContent], { type: 'text/html' });
+      const htmlUrl = URL.createObjectURL(htmlBlob);
+      const htmlLink = document.createElement('a');
+      htmlLink.href = htmlUrl;
+      htmlLink.download = `resume-${data.personal?.fullName || 'document'}-${Date.now()}.html`;
+      document.body.appendChild(htmlLink);
+      htmlLink.click();
+      document.body.removeChild(htmlLink);
+      URL.revokeObjectURL(htmlUrl);
+      
+      // Create DOC content
+      const docContent = createResumeDoc(data);
+      const docBlob = new Blob([docContent], { type: 'application/msword' });
+      const docUrl = URL.createObjectURL(docBlob);
+      const docLink = document.createElement('a');
+      docLink.href = docUrl;
+      docLink.download = `resume-${data.personal?.fullName || 'document'}-${Date.now()}.doc`;
+      document.body.appendChild(docLink);
+      docLink.click();
+      document.body.removeChild(docLink);
+      URL.revokeObjectURL(docUrl);
+      
+    } catch (error) {
+      console.error('Download error:', error);
+      alert('Download failed. Please try again.');
+    }
+  };
+
+  const createResumeHtml = (resumeData: ResumeData) => {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Resume</title>
+        <style>
+          body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+          .resume-container { max-width: 21cm; margin: 0 auto; }
+          h1 { color: #333; }
+          h2 { color: #555; border-bottom: 2px solid #eee; padding-bottom: 5px; }
+          h3 { color: #666; }
+          .contact { color: #666; margin-bottom: 20px; }
+          ul { padding-left: 20px; }
+          li { margin-bottom: 5px; }
+        </style>
+      </head>
+      <body>
+        <div class="resume-container">
+          <h1>${resumeData.personal?.fullName || 'Resume'}</h1>
+          <p class="contact">${resumeData.personal?.title || ''}</p>
+          <p class="contact">${resumeData.personal?.email || ''} | ${resumeData.personal?.phone || ''}</p>
+          
+          <h2>Summary</h2>
+          <p>${resumeData.summary || ''}</p>
+          
+          <h2>Experience</h2>
+          ${resumeData.experience.map(exp => `
+            <div style="margin-bottom: 20px;">
+              <h3>${exp.jobTitle} at ${exp.company}</h3>
+              <p style="color: #666;">${exp.startDate} - ${exp.endDate}</p>
+              <ul>
+                ${exp.bullets.map(bullet => `<li>${bullet}</li>`).join('')}
+              </ul>
+            </div>
+          `).join('')}
+          
+          <h2>Education</h2>
+          ${resumeData.education.map(edu => `
+            <div style="margin-bottom: 15px;">
+              <h3>${edu.degree} in ${edu.field}</h3>
+              <p style="color: #666;">${edu.school}</p>
+              <p style="color: #666;">${edu.startDate} - ${edu.endDate}</p>
+            </div>
+          `).join('')}
+          
+          <h2>Skills</h2>
+          <p>${(resumeData.skills || []).join(', ')}</p>
+        </div>
+      </body>
+      </html>
+    `;
+  };
+
+  const createResumeDoc = (resumeData: ResumeData) => {
+    return `
+      Resume - ${resumeData.personal?.fullName || 'Document'}
+      
+      ${resumeData.personal?.fullName || ''}
+      ${resumeData.personal?.title || ''}
+      ${resumeData.personal?.email || ''} | ${resumeData.personal?.phone || ''}
+      
+      SUMMARY
+      ${resumeData.summary || ''}
+      
+      EXPERIENCE
+      ${resumeData.experience.map(exp => `
+      ${exp.jobTitle} at ${exp.company}
+      ${exp.startDate} - ${exp.endDate}
+      ${exp.bullets.map(bullet => `• ${bullet}`).join('\n      ')}
+      `).join('\n')}
+      
+      EDUCATION
+      ${resumeData.education.map(edu => `
+      ${edu.degree} in ${edu.field}
+      ${edu.school}
+      ${edu.startDate} - ${edu.endDate}
+      `).join('\n')}
+      
+      SKILLS
+      ${(resumeData.skills || []).join(', ')}
+    `;
+  };
+
   if (data === null) {
     return (
       <div className="text-center py-12">
@@ -319,6 +441,7 @@ export default function ResumeReviewPage() {
         open={showUnlockModal}
         onClose={() => setShowUnlockModal(false)}
         onUnlock={() => router.push("/unlock")}
+        onMaybeLater={handleMaybeLaterDownload}
         atsScore={atsScore}
       />
     </div>

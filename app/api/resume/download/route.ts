@@ -2,16 +2,19 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { loadResume } from "@/lib/storage/resumeStorage";
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export async function GET(req: Request) {
+export async function GET(request: Request) {
   try {
     // Check if user has valid payment for this resume
-    const url = new URL(req.url);
-    const resumeId = url.searchParams.get("resume_id");
+    const { searchParams } = new URL(request.url);
+    const resumeId = searchParams.get("resume_id");
     
     if (!resumeId) {
       return NextResponse.json(

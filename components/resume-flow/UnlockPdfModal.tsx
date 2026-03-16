@@ -4,10 +4,11 @@ export interface UnlockPdfModalProps {
   open: boolean;
   onClose: () => void;
   onUnlock: () => void;
+  onMaybeLater?: () => void;
   atsScore?: number;
 }
 
-export function UnlockPdfModal({ open, onClose, onUnlock, atsScore: rawScore }: UnlockPdfModalProps) {
+export function UnlockPdfModal({ open, onClose, onUnlock, onMaybeLater, atsScore: rawScore }: UnlockPdfModalProps) {
   if (!open) return null;
 
   const atsScore = rawScore != null ? Math.min(100, rawScore) : null;
@@ -68,7 +69,10 @@ export function UnlockPdfModal({ open, onClose, onUnlock, atsScore: rawScore }: 
           </button>
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => {
+              onMaybeLater?.();
+              onClose();
+            }}
             className="flex-1 rounded-xl border border-stone-300 bg-transparent px-4 py-3 text-sm font-medium text-stone-600 hover:bg-stone-50"
           >
             Maybe later
