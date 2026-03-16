@@ -26,18 +26,12 @@ function PaymentStatusContent() {
     }
   }, [status, returnTo, orderId]);
 
-  // After payment for unlock/regular order, redirect to review page with download access
+  // After payment for unlock/regular order, set payment flag but don't redirect
   useEffect(() => {
     if (status === "success" && !returnTo && orderId) {
       // Set a flag in localStorage to indicate payment was successful for this order
       if (typeof window !== "undefined") {
         localStorage.setItem(`payment_success_${orderId}`, "true");
-        // Add a small delay to show success message, then redirect
-        const timer = setTimeout(() => {
-          window.location.href = `/resume/review`;
-        }, 2000); // 2 second delay to show success message
-        
-        return () => clearTimeout(timer);
       }
     }
   }, [status, orderId, returnTo]);
@@ -77,42 +71,26 @@ function PaymentStatusContent() {
         {status === "success" && (
           <>
             <div className="w-14 h-14 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center mx-auto mb-4 text-emerald-600 text-2xl">✓</div>
-            <h1 className="text-xl font-bold text-stone-900 mb-2">Payment received</h1>
+            <h1 className="text-xl font-bold text-stone-900 mb-2">Payment successful</h1>
             <p className="text-stone-500 text-sm mb-6">
               {isRegenOrder
                 ? "Your regeneration credit is ready. Go to the builder and click Regenerate."
                 : isUploadOrder
                   ? "Redirecting you to finish your resume…"
-                  : "Your placement toolkit is unlocked. Download your PDF."}
+                  : "Your resume is ready for download."}
             </p>
             {!isUploadOrder && (
               <>
-                <Link href="/builder" className="inline-block rounded-xl bg-amber-600 px-6 py-3 text-sm font-semibold text-white hover:bg-amber-700 transition-all shadow-md shadow-amber-900/10">
-                  {isRegenOrder ? "Go to Builder" : "Go to Builder"}
-                </Link>
-                <span className="mx-2 text-stone-400">·</span>
-                <Link href="/create" className="text-sm text-amber-700 hover:underline font-medium">Create another</Link>
-                {!isRegenOrder && (
-                  <>
-                    <span className="mx-2 text-stone-400">·</span>
-                    <Link href="/resume/review" className="text-sm text-emerald-600 hover:text-emerald-700 font-semibold">
-                      Download Resume Now
-                    </Link>
-                  </>
+                {isRegenOrder ? (
+                  <Link href="/builder" className="inline-block rounded-xl bg-amber-600 px-6 py-3 text-sm font-semibold text-white hover:bg-amber-700 transition-all shadow-md shadow-amber-900/10">
+                    Go to Builder
+                  </Link>
+                ) : (
+                  <Link href="/resume/review" className="inline-block rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white hover:bg-emerald-700 transition-all shadow-md shadow-emerald-900/10">
+                    Download Resume
+                  </Link>
                 )}
               </>
-            )}
-            {showUpsell && !isRegenOrder && !isUploadOrder && (
-              <div className="mt-8 pt-6 border-t border-stone-200 text-left">
-                <p className="text-stone-900 font-semibold mb-1">Simulate your real interview?</p>
-                <p className="text-stone-500 text-sm mb-3">Mock Interview Live — ₹12</p>
-                <div className="flex gap-2">
-                  <button type="button" onClick={handleUpsell} disabled={upsellLoading} className="flex-1 rounded-xl bg-amber-600 text-white py-2.5 text-sm font-semibold hover:bg-amber-700 disabled:opacity-50 transition-all">
-                    {upsellLoading ? "Opening…" : "Add for ₹12"}
-                  </button>
-                  <button type="button" onClick={() => setShowUpsell(false)} className="px-4 py-2.5 text-sm text-stone-500 hover:text-stone-700 transition-colors">No thanks</button>
-                </div>
-              </div>
             )}
           </>
         )}

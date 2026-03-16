@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { loadResume, saveResume } from "@/lib/storage/resumeStorage";
+import { loadResume, saveResume, getUnlockPreview } from "@/lib/storage/resumeStorage";
 import { getGeneratedResult } from "@/lib/resumeFlowStorage";
 import type { ResumeData, ExperienceEntry, ProjectEntry } from "@/types/resume";
 import { createEmptyProject } from "@/types/resume";
@@ -38,18 +38,38 @@ export default function ResumeReviewPage() {
   const [modifierLoading, setModifierLoading] = useState<ResumeModifier | null>(null);
   const [showUnlockModal, setShowUnlockModal] = useState(false);
   const [hasPaymentSuccess, setHasPaymentSuccess] = useState(false);
+  const [resumeId, setResumeId] = useState<string | null>(null);
 
   useEffect(() => {
     const raw = loadResume();
     setGenerated(getGeneratedResult());
     setData(raw ? ensureProjects(raw) : null);
     
+    // Get resume ID from unlock preview
+    const preview = getUnlockPreview();
+    if (preview) {
+      setResumeId(preview.resumeId);
+    }
+    
     // Check if user has successful payment for download access
-    if (typeof window !== "undefined") {
-      const paymentKeys = Object.keys(localStorage).filter(key => key.startsWith("payment_success_"));
-      setHasPaymentSuccess(paymentKeys.length > 0);
+    if (preview?.resumeId) {
+      checkPaymentStatus(preview.resumeId);
     }
   }, []);
+
+  const checkPaymentStatus = async (resumeId: string) => {
+    try {
+      const res = await fetch(`/api/resume/download?resume_id=${resumeId}`);
+      if (res.ok) {
+        setHasPaymentSuccess(true);
+      } else if (res.status === 402) {
+        setHasPaymentSuccess(false);
+      }
+    } catch (error) {
+      console.error("Payment status check failed:", error);
+      setHasPaymentSuccess(false);
+    }
+  };
 
   const persist = useCallback((next: ResumeData) => {
     setData(next);
@@ -141,13 +161,13 @@ export default function ResumeReviewPage() {
         >
           Open Full Builder
         </Link>
-        {hasPaymentSuccess ? (
+        {hasPaymentSuccess && resumeId ? (
           <button
             type="button"
             onClick={() => {
               // Trigger actual download since payment was successful
               const link = document.createElement('a');
-              link.href = '/api/resume/download';
+              link.href = `/api/resume/download?resume_id=${resumeId}`;
               link.download = 'resume.pdf';
               link.click();
             }}
