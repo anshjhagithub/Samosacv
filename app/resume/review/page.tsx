@@ -164,16 +164,32 @@ export default function ResumeReviewPage() {
         {hasPaymentSuccess && resumeId ? (
           <button
             type="button"
-            onClick={() => {
+            onClick={async () => {
               // Trigger actual download since payment was successful
-              const link = document.createElement('a');
-              link.href = `/api/resume/download?resume_id=${resumeId}`;
-              link.download = 'resume.pdf';
-              link.click();
+              try {
+                const response = await fetch(`/api/resume/download?resume_id=${resumeId}`);
+                if (response.ok) {
+                  const html = await response.text();
+                  const blob = new Blob([html], { type: 'text/html' });
+                  const url = URL.createObjectURL(blob);
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.download = `resume-${Date.now()}.html`;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  URL.revokeObjectURL(url);
+                } else {
+                  alert('Download failed. Please try again.');
+                }
+              } catch (error) {
+                console.error('Download error:', error);
+                alert('Download failed. Please try again.');
+              }
             }}
             className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 transition-all shadow-md shadow-emerald-900/10"
           >
-            Download PDF
+            Download Resume
           </button>
         ) : (
           <button

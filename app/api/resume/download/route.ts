@@ -1,11 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { loadResume } from "@/lib/storage/resumeStorage";
-import { ResumePreview } from "@/components/resume/ResumePreview";
-import { renderToStaticMarkup } from "react-dom/server";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas-pro";
-import React from "react";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -51,50 +46,67 @@ export async function GET(req: Request) {
       );
     }
 
-    // Generate PDF
-    const html = renderToStaticMarkup(
-      React.createElement('div', { style: { width: "21cm", minHeight: "29.7cm" } },
-        React.createElement(ResumePreview, { data: resumeData })
-      )
-    );
+    // Create simple HTML structure for PDF generation
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Resume</title>
+        <style>
+          body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
+          .resume-container { width: 21cm; min-height: 29.7cm; box-sizing: border-box; }
+        </style>
+      </head>
+      <body>
+        <div class="resume-container">
+          <h1>${resumeData.personal?.fullName || 'Resume'}</h1>
+          <p>${resumeData.personal?.title || ''}</p>
+          <p>${resumeData.personal?.email || ''} | ${resumeData.personal?.phone || ''}</p>
+          
+          <h2>Summary</h2>
+          <p>${resumeData.summary || ''}</p>
+          
+          <h2>Experience</h2>
+          ${resumeData.experience.map(exp => `
+            <div>
+              <h3>${exp.jobTitle} at ${exp.company}</h3>
+              <p>${exp.startDate} - ${exp.endDate}</p>
+              <ul>
+                ${exp.bullets.map(bullet => `<li>${bullet}</li>`).join('')}
+              </ul>
+            </div>
+          `).join('')}
+          
+          <h2>Education</h2>
+          ${resumeData.education.map(edu => `
+            <div>
+              <h3>${edu.degree} in ${edu.field}</h3>
+              <p>${edu.school}</p>
+              <p>${edu.startDate} - ${edu.endDate}</p>
+            </div>
+          `).join('')}
+          
+          <h2>Skills</h2>
+          <p>${resumeData.skills.join(', ')}</p>
+        </div>
+      </body>
+      </html>
+    `;
 
-    // Create a temporary DOM element for html2canvas
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = html;
-    tempDiv.style.position = 'absolute';
-    tempDiv.style.top = '-9999px';
-    tempDiv.style.left = '-9999px';
-    document.body.appendChild(tempDiv);
-
-    const canvas = await html2canvas(tempDiv, { 
-      scale: 2, 
-      useCORS: true,
-      allowTaint: true
-    });
-
-    document.body.removeChild(tempDiv);
-
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-    
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-    
-    // Return PDF as response
-    const pdfBuffer = pdf.output('arraybuffer');
-    
-    return new NextResponse(pdfBuffer, {
+    // Return HTML as response for now (PDF generation would require client-side)
+    return new NextResponse(html, {
       headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="resume-${resumeData.personal?.fullName || 'document'}.pdf"`,
+        'Content-Type': 'text/html',
+        'Content-Disposition': `attachment; filename="resume-${resumeData.personal?.fullName || 'document'}.html"`,
       },
     });
 
   } catch (error) {
     console.error('Download error:', error);
     return NextResponse.json(
-      { error: "Failed to generate PDF" },
+      { error: "Failed to generate document" },
       { status: 500 }
     );
   }
