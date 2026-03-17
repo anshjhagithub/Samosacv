@@ -18,6 +18,8 @@ const nextConfig = {
       config.resolve = config.resolve || {};
       config.resolve.fallback = { ...config.resolve.fallback, canvas: false };
     }
+    // Enable JSON imports for TypeScript
+    config.resolve.extensions = [...(config.resolve.extensions || []), '.json'];
     // Reduce large-string serialization in cache (avoids PackFileCacheStrategy warning)
     if (config.cache && typeof config.cache === "object" && config.cache.type === "filesystem") {
       config.cache.compression = false;

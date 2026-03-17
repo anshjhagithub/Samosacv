@@ -10,7 +10,7 @@ import type { ResumeData, ExperienceEntry, ProjectEntry } from "@/types/resume";
 import { createEmptyProject } from "@/types/resume";
 import { UnlockPdfModal } from "@/components/resume-flow/UnlockPdfModal";
 import type { ResumeModifier } from "@/lib/ai/resume-modify";
-import { scoreResume } from "@/lib/ats/engine";
+import { scoreResume } from "@/lib/ats/engine.client";
 
 const ResumePreviewPanel = dynamic(
   () => import("@/components/builder/ResumePreviewPanel").then((m) => ({ default: m.ResumePreviewPanel })),
