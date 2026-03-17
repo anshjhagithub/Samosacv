@@ -27,6 +27,11 @@ const MODIFIERS: { id: ResumeModifier; label: string }[] = [
   { id: "ats", label: "Optimize for ATS" },
 ];
 
+// Helper function to detect mobile devices
+const isMobileDevice = () => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
+
 function ensureProjects(data: ResumeData): ResumeData {
   if (data.projects && data.projects.length > 0) return data;
   return { ...data, projects: [createEmptyProject(crypto.randomUUID?.() ?? "proj-1")] };
@@ -159,6 +164,9 @@ export default function ResumeReviewPage() {
   const handleMaybeLaterDownload = async () => {
     if (!data) return;
     
+    // Check if mobile device
+    const isMobile = isMobileDevice();
+    
     try {
       // Create a hidden container to render the resume with actual template
       const container = document.createElement('div');
@@ -204,6 +212,9 @@ export default function ResumeReviewPage() {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
+      // For mobile, use simpler rendering to avoid memory issues
+      const scale = isMobile ? 1.5 : 2;
+      
       for (let i = 0; i < numPages; i++) {
         if (i > 0) {
           pdf.addPage();
@@ -229,23 +240,43 @@ export default function ResumeReviewPage() {
         pageContainer.appendChild(clonedElement);
         document.body.appendChild(pageContainer);
         
-        // Generate canvas for this page
-        const canvas = await html2canvas(pageContainer, { 
-          scale: 2, 
-          useCORS: true, 
-          backgroundColor: '#ffffff',
-          width: 794,
-          height: height
-        });
-        
-        // Add to PDF
-        const imgData = canvas.toDataURL('image/png');
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        try {
+          // Generate canvas for this page with error handling
+          const canvas = await html2canvas(pageContainer, { 
+            scale, 
+            useCORS: true, 
+            backgroundColor: '#ffffff',
+            width: 794,
+            height: height,
+            // Mobile-specific settings
+            logging: false,
+            removeContainer: false,
+            onclone: (clonedDoc) => {
+              // Remove any problematic elements for mobile
+              const videos = clonedDoc.querySelectorAll('video');
+              videos.forEach(v => v.remove());
+            }
+          });
+          
+          // Add to PDF
+          const imgData = canvas.toDataURL('image/png');
+          pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+          
+        } catch (canvasError) {
+          console.error('Canvas generation error:', canvasError);
+          // Fallback: add a blank page with text
+          pdf.setFontSize(12);
+          pdf.text('Resume content could not be rendered on this device.', 20, 20);
+          pdf.text(`Page ${i + 1} of ${numPages}`, 20, 30);
+        }
         
         // Clean up
         document.body.removeChild(pageContainer);
       }
-      pdf.save(`resume-${data.personal?.fullName || 'resume'}-${Date.now()}.pdf`);
+      
+      // Save PDF with mobile-friendly filename
+      const filename = `resume-${data.personal?.fullName || 'resume'}-${Date.now()}.pdf`;
+      pdf.save(filename);
       
       // Clean up
       document.body.removeChild(container);
@@ -258,7 +289,12 @@ export default function ResumeReviewPage() {
       
     } catch (error) {
       console.error('Download error:', error);
-      alert('Download failed. Please try again.');
+      // Show more helpful error message for mobile
+      if (isMobile) {
+        alert('Download failed on mobile. Please try on a desktop computer or check your browser settings.');
+      } else {
+        alert('Download failed. Please try again.');
+      }
     }
   };
   
@@ -270,17 +306,28 @@ export default function ResumeReviewPage() {
       
       // Get order details to see which add-ons were purchased
       const orderRes = await fetch(`/api/get-order?resume_id=${preview.resumeId}`);
-      if (!orderRes.ok) return;
+      if (!orderRes.ok) {
+        console.log('Order not found or not paid');
+        return;
+      }
       
       const orderData = await orderRes.json();
       const lineItems = orderData.line_items || {};
       
+      // Debug log
+      console.log('Order line items:', lineItems);
+      
       // Filter to purchased add-ons (excluding resume_pdf)
       const purchasedAddons = Object.entries(lineItems)
-        .filter(([slug, purchased]) => purchased && slug !== 'resume_pdf')
+        .filter(([slug, purchased]) => purchased === true && slug !== 'resume_pdf')
         .map(([slug]) => slug);
       
-      if (purchasedAddons.length === 0) return;
+      console.log('Purchased add-ons:', purchasedAddons);
+      
+      if (purchasedAddons.length === 0) {
+        console.log('No add-ons purchased');
+        return;
+      }
       
       // Generate resume text for addon generation
       const resumeText = `
@@ -430,7 +477,11 @@ export default function ResumeReviewPage() {
   const handlePaidDownload = async () => {
     if (!data) return;
     
+    // Check if mobile device
+    const isMobile = isMobileDevice();
+    
     try {
+      
       // Use the same PDF generation as "Maybe later" for consistency
       const container = document.createElement('div');
       container.style.position = 'absolute';
@@ -457,21 +508,86 @@ export default function ResumeReviewPage() {
         });
       }));
       
-      const canvas = await html2canvas(container.firstElementChild as HTMLElement, { 
-        scale: 2, 
-        useCORS: true, 
-        backgroundColor: '#ffffff',
-        width: 794,
-        height: 1123
-      });
+      // Generate PDF from the rendered template with proper pagination
+      const resumeElement = container.firstElementChild as HTMLElement;
+      
+      // Get the actual height of the content
+      const totalHeight = resumeElement.scrollHeight;
+      const a4HeightMM = 297; // A4 height in mm
+      const a4HeightPx = 1123; // A4 height in pixels at 96 DPI
+      
+      // Calculate how many pages we need
+      const numPages = Math.ceil(totalHeight / a4HeightPx);
       
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      const imgData = canvas.toDataURL('image/png');
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`resume-${data.personal?.fullName || 'resume'}-${Date.now()}.pdf`);
+      // For mobile, use simpler rendering to avoid memory issues
+      const scale = isMobile ? 1.5 : 2;
+      
+      for (let i = 0; i < numPages; i++) {
+        if (i > 0) {
+          pdf.addPage();
+        }
+        
+        // Calculate the source area for this page
+        const startY = i * a4HeightPx;
+        const height = Math.min(a4HeightPx, totalHeight - startY);
+        
+        // Create a temporary container for this page's content
+        const pageContainer = document.createElement('div');
+        pageContainer.style.position = 'absolute';
+        pageContainer.style.top = '-9999px';
+        pageContainer.style.left = '-9999px';
+        pageContainer.style.width = '21cm';
+        pageContainer.style.height = `${a4HeightPx}px`;
+        pageContainer.style.overflow = 'hidden';
+        pageContainer.style.backgroundColor = 'white';
+        
+        // Clone the resume element and offset it
+        const clonedElement = resumeElement.cloneNode(true) as HTMLElement;
+        clonedElement.style.transform = `translateY(-${startY}px)`;
+        pageContainer.appendChild(clonedElement);
+        document.body.appendChild(pageContainer);
+        
+        try {
+          // Generate canvas for this page with error handling
+          const canvas = await html2canvas(pageContainer, { 
+            scale, 
+            useCORS: true, 
+            backgroundColor: '#ffffff',
+            width: 794,
+            height: height,
+            // Mobile-specific settings
+            logging: false,
+            removeContainer: false,
+            onclone: (clonedDoc) => {
+              // Remove any problematic elements for mobile
+              const videos = clonedDoc.querySelectorAll('video');
+              videos.forEach(v => v.remove());
+            }
+          });
+          
+          // Add to PDF
+          const imgData = canvas.toDataURL('image/png');
+          pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+          
+        } catch (canvasError) {
+          console.error('Canvas generation error:', canvasError);
+          // Fallback: add a blank page with text
+          pdf.setFontSize(12);
+          pdf.text('Resume content could not be rendered on this device.', 20, 20);
+          pdf.text(`Page ${i + 1} of ${numPages}`, 20, 30);
+        }
+        
+        // Clean up
+        document.body.removeChild(pageContainer);
+      }
+      
+      // Save PDF with mobile-friendly filename
+      const filename = `resume-${data.personal?.fullName || 'resume'}-${Date.now()}.pdf`;
+      pdf.save(filename);
       
       document.body.removeChild(container);
       
@@ -483,7 +599,12 @@ export default function ResumeReviewPage() {
       
     } catch (error) {
       console.error('Download error:', error);
-      alert('Download failed. Please try again.');
+      // Show more helpful error message for mobile
+      if (isMobile) {
+        alert('Download failed on mobile. Please try on a desktop computer or check your browser settings.');
+      } else {
+        alert('Download failed. Please try again.');
+      }
     }
   };
 
@@ -695,8 +816,7 @@ export default function ResumeReviewPage() {
       <UnlockPdfModal
         open={showUnlockModal}
         onClose={() => setShowUnlockModal(false)}
-        onUnlock={() => router.push("/unlock")}
-        onMaybeLater={handleMaybeLaterDownload}
+        onUnlock={() => setShowUnlockModal(false)}
         atsScore={atsScore}
       />
     </div>
