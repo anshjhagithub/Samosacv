@@ -186,6 +186,11 @@ export default function ResumeReviewPage() {
     const isMobile = isMobileDevice();
     
     try {
+      // Import required modules
+      const { ResumePreview } = await import('@/components/resume/ResumePreview');
+      const html2canvas = (await import('html2canvas-pro')).default;
+      const jsPDF = (await import('jspdf')).default;
+      
       // Create a hidden container to render the resume with actual template
       const container = document.createElement('div');
       container.style.position = 'absolute';
@@ -195,30 +200,148 @@ export default function ResumeReviewPage() {
       container.style.backgroundColor = 'white';
       document.body.appendChild(container);
 
-      // Import required modules
-      const { ResumePreview } = await import('@/components/resume/ResumePreview');
-      const html2canvas = (await import('html2canvas-pro')).default;
-      const jsPDF = (await import('jspdf')).default;
+      // Use a safer approach for React rendering on mobile
+      if (isMobile) {
+        // For mobile, use innerHTML approach with the rendered component
+        try {
+          // Try to get the HTML from the existing preview in the page
+          const existingPreview = document.querySelector('.resume-pdf-source');
+          if (existingPreview) {
+            container.innerHTML = existingPreview.innerHTML;
+          } else {
+            // Fallback: create a simpler version that matches the builder structure
+            const previewDiv = document.createElement('div');
+            previewDiv.className = 'resume-pdf-source';
+            previewDiv.style.cssText = `
+              width: 21cm;
+              min-height: 29.7cm;
+              background: white;
+              border-radius: 8px;
+              overflow: hidden;
+              border: 1px solid #e5e7eb;
+              box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            `;
+            
+            // Use the actual ResumePreview component but render it to string first
+            const { renderToString } = await import('react-dom/server');
+            const previewHTML = renderToString(<ResumePreview data={data} />);
+            previewDiv.innerHTML = previewHTML;
+            container.appendChild(previewDiv);
+          }
+        } catch (error) {
+          console.error('Mobile rendering error:', error);
+          // Fallback to basic HTML that matches the builder style
+          container.innerHTML = `
+            <div class="resume-pdf-source" style="width: 21cm; min-height: 29.7cm; background: white; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; color: #1f2937; padding: 40px;">
+              ${data.personal?.fullName || data.personal?.title ? `
+              <header style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #374151; padding-bottom: 20px;">
+                ${data.personal?.fullName ? `<h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #111827; margin-bottom: 8px;">${data.personal.fullName}</h1>` : ''}
+                ${data.personal?.title ? `<p style="margin: 0; font-size: 18px; color: #6b7280; font-weight: 500;">${data.personal.title}</p>` : ''}
+                ${data.personal?.email || data.personal?.phone ? `
+                  <p style="margin: 8px 0 0 0; font-size: 14px; color: #6b7280;">
+                    ${[data.personal.email, data.personal.phone].filter(Boolean).join(' • ')}
+                  </p>
+                ` : ''}
+              </header>
+              ` : ''}
+              
+              ${data.summary ? `
+              <section style="margin-bottom: 30px;">
+                <h2 style="font-size: 16px; font-weight: 600; color: #374151; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Summary</h2>
+                <p style="margin: 0; line-height: 1.6; color: #4b5563;">${data.summary}</p>
+              </section>
+              ` : ''}
+              
+              ${data.experience.length > 0 ? `
+              <section style="margin-bottom: 30px;">
+                <h2 style="font-size: 16px; font-weight: 600; color: #374151; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Experience</h2>
+                ${data.experience.map(exp => `
+                  <div style="margin-bottom: 24px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                      <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #111827;">${exp.jobTitle}</h3>
+                      <span style="font-size: 14px; color: #6b7280; white-space: nowrap;">${exp.startDate} - ${exp.endDate}</span>
+                    </div>
+                    <p style="margin: 0 0 12px 0; font-size: 15px; color: #374151; font-weight: 500;">${exp.company}</p>
+                    <ul style="margin: 0; padding-left: 20px;">
+                      ${exp.bullets.filter(Boolean).map(bullet => `
+                        <li style="margin-bottom: 6px; line-height: 1.5; color: #4b5563;">${bullet}</li>
+                      `).join('')}
+                    </ul>
+                  </div>
+                `).join('')}
+              </section>
+              ` : ''}
+              
+              ${data.education.length > 0 ? `
+              <section style="margin-bottom: 30px;">
+                <h2 style="font-size: 16px; font-weight: 600; color: #374151; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Education</h2>
+                ${data.education.map(edu => `
+                  <div style="margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
+                      <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #111827;">${edu.degree}${edu.field ? ` in ${edu.field}` : ''}</h3>
+                      <span style="font-size: 14px; color: #6b7280; white-space: nowrap;">${edu.startDate} - ${edu.endDate}</span>
+                    </div>
+                    <p style="margin: 0; font-size: 15px; color: #374151;">${edu.school}</p>
+                  </div>
+                `).join('')}
+              </section>
+              ` : ''}
+              
+              ${data.skills.length > 0 ? `
+              <section style="margin-bottom: 30px;">
+                <h2 style="font-size: 16px; font-weight: 600; color: #374151; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Skills</h2>
+                <p style="margin: 0; line-height: 1.6; color: #4b5563;">${data.skills.join(' • ')}</p>
+              </section>
+              ` : ''}
+              
+              ${data.projects && data.projects.length > 0 ? `
+              <section style="margin-bottom: 30px;">
+                <h2 style="font-size: 16px; font-weight: 600; color: #374151; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Projects</h2>
+                ${data.projects.filter(p => p.title || p.description).map(proj => `
+                  <div style="margin-bottom: 20px;">
+                    <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #111827;">${proj.title || 'Project'}</h3>
+                    <p style="margin: 0 0 12px 0; line-height: 1.6; color: #4b5563;">${proj.description || ''}</p>
+                    ${proj.bullets && proj.bullets.length > 0 ? `
+                      <ul style="margin: 0; padding-left: 20px;">
+                        ${proj.bullets.filter(Boolean).map(bullet => `
+                          <li style="margin-bottom: 6px; line-height: 1.5; color: #4b5563;">${bullet}</li>
+                        `).join('')}
+                      </ul>
+                    ` : ''}
+                  </div>
+                `).join('')}
+              </section>
+              ` : ''}
+            </div>
+          `;
+        }
+      } else {
+        // Desktop: Use React rendering with createRoot
+        const { createRoot } = await import('react-dom/client');
+        const root = createRoot(container);
+        root.render(<ResumePreview data={data} />);
+        
+        // Wait for the component to render
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Wait for images to load
+        const images = container.querySelectorAll('img');
+        await Promise.all(Array.from(images).map(img => {
+          if (img.complete) return Promise.resolve();
+          return new Promise((resolve) => {
+            img.onload = resolve;
+            img.onerror = resolve;
+          });
+        }));
+        
+        // Clean up React root
+        root.unmount();
+      }
       
-      // Use client-side rendering instead of server-side rendering
-      const { createRoot } = await import('react-dom/client');
-      const root = createRoot(container);
-      root.render(<ResumePreview data={data} />);
+      // Wait for content to render
+      await new Promise(resolve => setTimeout(resolve, 200));
       
-      // Wait for the component to render
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Wait for images to load
-      const images = container.querySelectorAll('img');
-      await Promise.all(Array.from(images).map(img => {
-        if (img.complete) return Promise.resolve();
-        return new Promise((resolve) => {
-          img.onload = resolve;
-          img.onerror = resolve;
-        });
-      }));
-      
-      // Generate PDF from the rendered template with proper pagination
+      // Generate PDF from the rendered template
       const resumeElement = container.firstElementChild as HTMLElement;
       
       // Get the actual height of the content
@@ -253,15 +376,6 @@ export default function ResumeReviewPage() {
           // Remove problematic elements for mobile
           const videos = clonedDoc.querySelectorAll('video');
           videos.forEach(v => v.remove());
-          
-          // Optimize images for mobile
-          const imgs = clonedDoc.querySelectorAll('img');
-          imgs.forEach(img => {
-            if (img.naturalWidth > 1000) {
-              img.style.maxWidth = '1000px';
-              img.style.height = 'auto';
-            }
-          });
         }
       };
       
@@ -327,7 +441,6 @@ export default function ResumeReviewPage() {
       pdf.save(filename);
       
       // Clean up
-      root.unmount();
       document.body.removeChild(container);
       
       // Generate DOC file with proper styling
@@ -553,6 +666,11 @@ export default function ResumeReviewPage() {
     const isMobile = isMobileDevice();
     
     try {
+      // Import required modules
+      const { ResumePreview } = await import('@/components/resume/ResumePreview');
+      const html2canvas = (await import('html2canvas-pro')).default;
+      const jsPDF = (await import('jspdf')).default;
+      
       // Create a hidden container to render the resume with actual template
       const container = document.createElement('div');
       container.style.position = 'absolute';
@@ -562,30 +680,148 @@ export default function ResumeReviewPage() {
       container.style.backgroundColor = 'white';
       document.body.appendChild(container);
 
-      // Import required modules
-      const { ResumePreview } = await import('@/components/resume/ResumePreview');
-      const html2canvas = (await import('html2canvas-pro')).default;
-      const jsPDF = (await import('jspdf')).default;
+      // Use a safer approach for React rendering on mobile
+      if (isMobile) {
+        // For mobile, use innerHTML approach with the rendered component
+        try {
+          // Try to get the HTML from the existing preview in the page
+          const existingPreview = document.querySelector('.resume-pdf-source');
+          if (existingPreview) {
+            container.innerHTML = existingPreview.innerHTML;
+          } else {
+            // Fallback: create a simpler version that matches the builder structure
+            const previewDiv = document.createElement('div');
+            previewDiv.className = 'resume-pdf-source';
+            previewDiv.style.cssText = `
+              width: 21cm;
+              min-height: 29.7cm;
+              background: white;
+              border-radius: 8px;
+              overflow: hidden;
+              border: 1px solid #e5e7eb;
+              box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            `;
+            
+            // Use the actual ResumePreview component but render it to string first
+            const { renderToString } = await import('react-dom/server');
+            const previewHTML = renderToString(<ResumePreview data={data} />);
+            previewDiv.innerHTML = previewHTML;
+            container.appendChild(previewDiv);
+          }
+        } catch (error) {
+          console.error('Mobile rendering error:', error);
+          // Fallback to basic HTML that matches the builder style
+          container.innerHTML = `
+            <div class="resume-pdf-source" style="width: 21cm; min-height: 29.7cm; background: white; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; color: #1f2937; padding: 40px;">
+              ${data.personal?.fullName || data.personal?.title ? `
+              <header style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #374151; padding-bottom: 20px;">
+                ${data.personal?.fullName ? `<h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #111827; margin-bottom: 8px;">${data.personal.fullName}</h1>` : ''}
+                ${data.personal?.title ? `<p style="margin: 0; font-size: 18px; color: #6b7280; font-weight: 500;">${data.personal.title}</p>` : ''}
+                ${data.personal?.email || data.personal?.phone ? `
+                  <p style="margin: 8px 0 0 0; font-size: 14px; color: #6b7280;">
+                    ${[data.personal.email, data.personal.phone].filter(Boolean).join(' • ')}
+                  </p>
+                ` : ''}
+              </header>
+              ` : ''}
+              
+              ${data.summary ? `
+              <section style="margin-bottom: 30px;">
+                <h2 style="font-size: 16px; font-weight: 600; color: #374151; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Summary</h2>
+                <p style="margin: 0; line-height: 1.6; color: #4b5563;">${data.summary}</p>
+              </section>
+              ` : ''}
+              
+              ${data.experience.length > 0 ? `
+              <section style="margin-bottom: 30px;">
+                <h2 style="font-size: 16px; font-weight: 600; color: #374151; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Experience</h2>
+                ${data.experience.map(exp => `
+                  <div style="margin-bottom: 24px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                      <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #111827;">${exp.jobTitle}</h3>
+                      <span style="font-size: 14px; color: #6b7280; white-space: nowrap;">${exp.startDate} - ${exp.endDate}</span>
+                    </div>
+                    <p style="margin: 0 0 12px 0; font-size: 15px; color: #374151; font-weight: 500;">${exp.company}</p>
+                    <ul style="margin: 0; padding-left: 20px;">
+                      ${exp.bullets.filter(Boolean).map(bullet => `
+                        <li style="margin-bottom: 6px; line-height: 1.5; color: #4b5563;">${bullet}</li>
+                      `).join('')}
+                    </ul>
+                  </div>
+                `).join('')}
+              </section>
+              ` : ''}
+              
+              ${data.education.length > 0 ? `
+              <section style="margin-bottom: 30px;">
+                <h2 style="font-size: 16px; font-weight: 600; color: #374151; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Education</h2>
+                ${data.education.map(edu => `
+                  <div style="margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
+                      <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #111827;">${edu.degree}${edu.field ? ` in ${edu.field}` : ''}</h3>
+                      <span style="font-size: 14px; color: #6b7280; white-space: nowrap;">${edu.startDate} - ${edu.endDate}</span>
+                    </div>
+                    <p style="margin: 0; font-size: 15px; color: #374151;">${edu.school}</p>
+                  </div>
+                `).join('')}
+              </section>
+              ` : ''}
+              
+              ${data.skills.length > 0 ? `
+              <section style="margin-bottom: 30px;">
+                <h2 style="font-size: 16px; font-weight: 600; color: #374151; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Skills</h2>
+                <p style="margin: 0; line-height: 1.6; color: #4b5563;">${data.skills.join(' • ')}</p>
+              </section>
+              ` : ''}
+              
+              ${data.projects && data.projects.length > 0 ? `
+              <section style="margin-bottom: 30px;">
+                <h2 style="font-size: 16px; font-weight: 600; color: #374151; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Projects</h2>
+                ${data.projects.filter(p => p.title || p.description).map(proj => `
+                  <div style="margin-bottom: 20px;">
+                    <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #111827;">${proj.title || 'Project'}</h3>
+                    <p style="margin: 0 0 12px 0; line-height: 1.6; color: #4b5563;">${proj.description || ''}</p>
+                    ${proj.bullets && proj.bullets.length > 0 ? `
+                      <ul style="margin: 0; padding-left: 20px;">
+                        ${proj.bullets.filter(Boolean).map(bullet => `
+                          <li style="margin-bottom: 6px; line-height: 1.5; color: #4b5563;">${bullet}</li>
+                        `).join('')}
+                      </ul>
+                    ` : ''}
+                  </div>
+                `).join('')}
+              </section>
+              ` : ''}
+            </div>
+          `;
+        }
+      } else {
+        // Desktop: Use React rendering with createRoot
+        const { createRoot } = await import('react-dom/client');
+        const root = createRoot(container);
+        root.render(<ResumePreview data={data} />);
+        
+        // Wait for the component to render
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Wait for images to load
+        const images = container.querySelectorAll('img');
+        await Promise.all(Array.from(images).map(img => {
+          if (img.complete) return Promise.resolve();
+          return new Promise((resolve) => {
+            img.onload = resolve;
+            img.onerror = resolve;
+          });
+        }));
+        
+        // Clean up React root
+        root.unmount();
+      }
       
-      // Use client-side rendering instead of server-side rendering
-      const { createRoot } = await import('react-dom/client');
-      const root = createRoot(container);
-      root.render(<ResumePreview data={data} />);
+      // Wait for content to render
+      await new Promise(resolve => setTimeout(resolve, 200));
       
-      // Wait for the component to render
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Wait for images to load
-      const images = container.querySelectorAll('img');
-      await Promise.all(Array.from(images).map(img => {
-        if (img.complete) return Promise.resolve();
-        return new Promise((resolve) => {
-          img.onload = resolve;
-          img.onerror = resolve;
-        });
-      }));
-      
-      // Generate PDF from the rendered template with proper pagination
+      // Generate PDF from the rendered template
       const resumeElement = container.firstElementChild as HTMLElement;
       
       // Get the actual height of the content
@@ -620,15 +856,6 @@ export default function ResumeReviewPage() {
           // Remove problematic elements for mobile
           const videos = clonedDoc.querySelectorAll('video');
           videos.forEach(v => v.remove());
-          
-          // Optimize images for mobile
-          const imgs = clonedDoc.querySelectorAll('img');
-          imgs.forEach(img => {
-            if (img.naturalWidth > 1000) {
-              img.style.maxWidth = '1000px';
-              img.style.height = 'auto';
-            }
-          });
         }
       };
       
@@ -694,7 +921,6 @@ export default function ResumeReviewPage() {
       pdf.save(filename);
       
       // Clean up
-      root.unmount();
       document.body.removeChild(container);
       
       // Also generate DOC file
