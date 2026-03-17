@@ -29,11 +29,38 @@ export async function POST(req: Request) {
     const orderId = data.data?.order?.order_id;
     const paymentStatus = data.data?.payment?.payment_status;
 
+    console.log("Webhook received:", { orderId, paymentStatus, data: JSON.stringify(data, null, 2) });
+
     if (paymentStatus === "SUCCESS") {
-      await supabaseAdmin
+      const { error: updateError } = await supabaseAdmin
         .from("orders")
-        .update({ status: "paid" })
+        .update({ 
+          status: "paid",
+          updated_at: new Date().toISOString()
+        })
         .eq("order_id", orderId);
+
+      if (updateError) {
+        console.error("Failed to update order status:", updateError);
+        return NextResponse.json(
+          { error: "Failed to update order status" },
+          { status: 500 }
+        );
+      }
+
+      console.log("Order status updated successfully:", orderId);
+    } else if (paymentStatus === "FAILED" || paymentStatus === "CANCELLED") {
+      const { error: updateError } = await supabaseAdmin
+        .from("orders")
+        .update({ 
+          status: "failed",
+          updated_at: new Date().toISOString()
+        })
+        .eq("order_id", orderId);
+
+      if (updateError) {
+        console.error("Failed to update order status to failed:", updateError);
+      }
     }
 
     return NextResponse.json({ received: true });

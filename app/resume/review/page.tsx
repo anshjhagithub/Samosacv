@@ -10,6 +10,7 @@ import type { ResumeData, ExperienceEntry, ProjectEntry } from "@/types/resume";
 import { createEmptyProject } from "@/types/resume";
 import { UnlockPdfModal } from "@/components/resume-flow/UnlockPdfModal";
 import type { ResumeModifier } from "@/lib/ai/resume-modify";
+import { scoreResume } from "@/lib/ats/engine";
 
 const ResumePreviewPanel = dynamic(
   () => import("@/components/builder/ResumePreviewPanel").then((m) => ({ default: m.ResumePreviewPanel })),
@@ -118,6 +119,43 @@ export default function ResumeReviewPage() {
   };
   const updateSkills = (skills: string[]) => setData((d) => (d ? { ...d, skills } : d));
 
+  // Calculate ATS score from current resume data
+  const calculateAtsScore = useCallback((resumeData: ResumeData) => {
+    if (!resumeData) return 0;
+    
+    // Convert resume data to text format for ATS scoring
+    const resumeText = `
+      ${resumeData.personal?.title || ''}
+      ${resumeData.summary || ''}
+      
+      Experience:
+      ${resumeData.experience.map(exp => 
+        `${exp.jobTitle} at ${exp.company}\n${exp.bullets.join('\n')}`
+      ).join('\n\n')}
+      
+      Education:
+      ${resumeData.education.map(edu => 
+        `${edu.degree} in ${edu.field} at ${edu.school}`
+      ).join('\n')}
+      
+      Skills:
+      ${resumeData.skills.join(', ')}
+      
+      Projects:
+      ${resumeData.projects?.map(proj => 
+        `${proj.title}: ${proj.description}\n${proj.bullets?.join('\n') || ''}`
+      ).join('\n\n') || ''}
+    `;
+    
+    const targetRole = resumeData.personal?.title || 'Professional';
+    const result = scoreResume(resumeText.trim(), targetRole);
+    return result.finalScore;
+  }, []);
+
+  // Get current ATS score
+  const currentAtsScore = data ? calculateAtsScore(data) : 0;
+  const displayAtsScore = currentAtsScore > 0 ? currentAtsScore : Math.min(100, generated?.atsScore ?? 0);
+
   const handleMaybeLaterDownload = async () => {
     if (!data) return;
     
@@ -151,21 +189,62 @@ export default function ResumeReviewPage() {
         });
       }));
       
-      // Generate PDF from the rendered template
-      const canvas = await html2canvas(container.firstElementChild as HTMLElement, { 
-        scale: 2, 
-        useCORS: true, 
-        backgroundColor: '#ffffff',
-        width: 794, // A4 width at 96 DPI
-        height: 1123 // A4 height at 96 DPI
-      });
+      // Generate PDF from the rendered template with proper pagination
+      const resumeElement = container.firstElementChild as HTMLElement;
+      
+      // Get the actual height of the content
+      const totalHeight = resumeElement.scrollHeight;
+      const a4HeightMM = 297; // A4 height in mm
+      const a4HeightPx = 1123; // A4 height in pixels at 96 DPI
+      
+      // Calculate how many pages we need
+      const numPages = Math.ceil(totalHeight / a4HeightPx);
       
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      const imgData = canvas.toDataURL('image/png');
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      for (let i = 0; i < numPages; i++) {
+        if (i > 0) {
+          pdf.addPage();
+        }
+        
+        // Calculate the source area for this page
+        const startY = i * a4HeightPx;
+        const height = Math.min(a4HeightPx, totalHeight - startY);
+        
+        // Create a temporary container for this page's content
+        const pageContainer = document.createElement('div');
+        pageContainer.style.position = 'absolute';
+        pageContainer.style.top = '-9999px';
+        pageContainer.style.left = '-9999px';
+        pageContainer.style.width = '21cm';
+        pageContainer.style.height = `${a4HeightPx}px`;
+        pageContainer.style.overflow = 'hidden';
+        pageContainer.style.backgroundColor = 'white';
+        
+        // Clone the resume element and offset it
+        const clonedElement = resumeElement.cloneNode(true) as HTMLElement;
+        clonedElement.style.transform = `translateY(-${startY}px)`;
+        pageContainer.appendChild(clonedElement);
+        document.body.appendChild(pageContainer);
+        
+        // Generate canvas for this page
+        const canvas = await html2canvas(pageContainer, { 
+          scale: 2, 
+          useCORS: true, 
+          backgroundColor: '#ffffff',
+          width: 794,
+          height: height
+        });
+        
+        // Add to PDF
+        const imgData = canvas.toDataURL('image/png');
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        
+        // Clean up
+        document.body.removeChild(pageContainer);
+      }
       pdf.save(`resume-${data.personal?.fullName || 'resume'}-${Date.now()}.pdf`);
       
       // Clean up
@@ -174,166 +253,177 @@ export default function ResumeReviewPage() {
       // Generate DOC file with proper styling
       await generateDocFile(data);
       
+      // Generate add-ons if user paid for them
+      await generateAddons(data);
+      
     } catch (error) {
       console.error('Download error:', error);
       alert('Download failed. Please try again.');
     }
   };
   
-  const generateDocFile = async (resumeData: ResumeData) => {
+  const generateAddons = async (resumeData: ResumeData) => {
     try {
-      // Create HTML content for DOC with proper styling
-      const docHtml = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <title>Resume</title>
-          <style>
-            @page {
-              size: A4;
-              margin: 1cm;
-            }
-            body {
-              font-family: 'Times New Roman', serif;
-              font-size: 11pt;
-              line-height: 1.4;
-              color: #333;
-              margin: 0;
-              padding: 20px;
-            }
-            h1 {
-              font-size: 16pt;
-              font-weight: bold;
-              color: #1a1a1a;
-              margin-bottom: 5pt;
-            }
-            h2 {
-              font-size: 12pt;
-              font-weight: bold;
-              color: #1a1a1a;
-              border-bottom: 2px solid #1a1a1a;
-              padding-bottom: 2pt;
-              margin-top: 15pt;
-              margin-bottom: 8pt;
-              text-transform: uppercase;
-              letter-spacing: 1pt;
-            }
-            .contact {
-              font-size: 10pt;
-              margin-bottom: 15pt;
-              color: #666;
-            }
-            .job-title {
-              font-weight: bold;
-              font-size: 11pt;
-            }
-            .company {
-              font-style: italic;
-              color: #555;
-            }
-            .date {
-              float: right;
-              font-size: 10pt;
-              color: #666;
-            }
-            ul {
-              margin-left: 20pt;
-              margin-bottom: 8pt;
-            }
-            li {
-              margin-bottom: 3pt;
-            }
-            .section {
-              margin-bottom: 15pt;
-            }
-          </style>
-        </head>
-        <body>
-          <h1>${resumeData.personal?.fullName || 'Your Name'}</h1>
-          <div class="contact">
-            ${resumeData.personal?.email || ''} ${resumeData.personal?.phone ? `| ${resumeData.personal.phone}` : ''} ${resumeData.personal?.location ? `| ${resumeData.personal.location}` : ''}
-          </div>
-          
-          ${resumeData.summary ? `
-          <div class="section">
-            <h2>Summary</h2>
-            <p>${resumeData.summary}</p>
-          </div>
-          ` : ''}
-          
-          <div class="section">
-            <h2>Experience</h2>
-            ${resumeData.experience.map(exp => `
-              <div style="margin-bottom: 10pt;">
-                <div style="display: flex; justify-content: space-between;">
-                  <span class="job-title">${exp.jobTitle || 'Job Title'}</span>
-                  <span class="date">${exp.startDate} - ${exp.current ? 'Present' : exp.endDate}</span>
-                </div>
-                <div class="company">${exp.company}${exp.location ? `, ${exp.location}` : ''}</div>
-                ${exp.bullets && exp.bullets.length > 0 ? `
-                  <ul>
-                    ${exp.bullets.filter(Boolean).map(bullet => `<li>${bullet}</li>`).join('')}
-                  </ul>
-                ` : ''}
-              </div>
-            `).join('')}
-          </div>
-          
-          <div class="section">
-            <h2>Education</h2>
-            ${resumeData.education.map(edu => `
-              <div style="margin-bottom: 8pt;">
-                <div style="display: flex; justify-content: space-between;">
-                  <span><strong>${edu.degree}${edu.field ? ` in ${edu.field}` : ''}</strong></span>
-                  <span class="date">${edu.startDate} - ${edu.endDate}</span>
-                </div>
-                <div class="company">${edu.school}</div>
-                ${edu.gpa ? `<div style="font-size: 10pt; color: #666;">GPA: ${edu.gpa}</div>` : ''}
-              </div>
-            `).join('')}
-          </div>
-          
-          ${resumeData.skills && resumeData.skills.length > 0 ? `
-          <div class="section">
-            <h2>Skills</h2>
-            <p>${resumeData.skills.join(' · ')}</p>
-          </div>
-          ` : ''}
-          
-          ${resumeData.projects && resumeData.projects.length > 0 ? `
-          <div class="section">
-            <h2>Projects</h2>
-            ${resumeData.projects.filter(p => p.title || p.description).map(proj => `
-              <div style="margin-bottom: 8pt;">
-                <div style="font-weight: bold;">${proj.title || 'Project'}</div>
-                ${proj.description ? `<p>${proj.description}</p>` : ''}
-                ${proj.bullets && proj.bullets.length > 0 ? `
-                  <ul>
-                    ${proj.bullets.filter(Boolean).map(bullet => `<li>${bullet}</li>`).join('')}
-                  </ul>
-                ` : ''}
-              </div>
-            `).join('')}
-          </div>
-          ` : ''}
-        </body>
-        </html>
+      // Check if user has paid for add-ons by checking the order
+      const preview = getUnlockPreview();
+      if (!preview?.resumeId) return;
+      
+      // Get order details to see which add-ons were purchased
+      const orderRes = await fetch(`/api/get-order?resume_id=${preview.resumeId}`);
+      if (!orderRes.ok) return;
+      
+      const orderData = await orderRes.json();
+      const lineItems = orderData.line_items || {};
+      
+      // Filter to purchased add-ons (excluding resume_pdf)
+      const purchasedAddons = Object.entries(lineItems)
+        .filter(([slug, purchased]) => purchased && slug !== 'resume_pdf')
+        .map(([slug]) => slug);
+      
+      if (purchasedAddons.length === 0) return;
+      
+      // Generate resume text for addon generation
+      const resumeText = `
+        ${resumeData.personal?.fullName || ''}
+        ${resumeData.personal?.title || ''}
+        ${resumeData.summary || ''}
+        
+        Experience:
+        ${resumeData.experience.map(exp => 
+          `${exp.jobTitle} at ${exp.company}\n${exp.bullets.join('\n')}`
+        ).join('\n\n')}
+        
+        Education:
+        ${resumeData.education.map(edu => 
+          `${edu.degree} in ${edu.field} at ${edu.school}`
+        ).join('\n')}
+        
+        Skills:
+        ${resumeData.skills.join(', ')}
+        
+        Projects:
+        ${resumeData.projects?.map(proj => 
+          `${proj.title}: ${proj.description}\n${proj.bullets?.join('\n') || ''}`
+        ).join('\n\n') || ''}
       `;
       
-      // Create and download DOC file
-      const docBlob = new Blob([docHtml], { type: 'application/msword' });
-      const docUrl = URL.createObjectURL(docBlob);
-      const docLink = document.createElement('a');
-      docLink.href = docUrl;
-      docLink.download = `resume-${resumeData.personal?.fullName || 'resume'}-${Date.now()}.doc`;
-      document.body.appendChild(docLink);
-      docLink.click();
-      document.body.removeChild(docLink);
-      URL.revokeObjectURL(docUrl);
+      // Call addon generation API
+      const addonRes = await fetch('/api/generate-addons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          resumeText: resumeText.trim(),
+          targetRole: preview.targetRole || resumeData.personal?.title || 'Professional',
+          addons: purchasedAddons
+        })
+      });
+      
+      if (!addonRes.ok) {
+        console.error('Failed to generate add-ons:', await addonRes.text());
+        return;
+      }
+      
+      const addonData = await addonRes.json();
+      
+      // Download each addon as a separate file
+      addonData.addons?.forEach((addon: any) => {
+        const blob = new Blob([addon.content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${addon.title.replace(/\s+/g, '_')}_${resumeData.personal?.fullName || 'resume'}_${Date.now()}.txt`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      });
+      
+    } catch (error) {
+      console.error('Addon generation error:', error);
+    }
+  };
+
+  const generateDocFile = async (resumeData: ResumeData) => {
+    try {
+      // Use the existing docx export engine
+      const { exportDocx } = await import('@/engine/export');
+      
+      // Convert resume data to document draft format
+      const documentDraft = {
+        metadata: {
+          documentId: crypto.randomUUID(),
+          policyVersion: "1.0",
+          category: "corporate" as const,
+          documentType: "brd" as const, // Using a valid document type
+          generatedAt: new Date().toLocaleString('en-IN', { 
+            day: '2-digit', 
+            month: 'short', 
+            year: 'numeric', 
+            hour: '2-digit', 
+            minute: '2-digit',
+            timeZone: 'Asia/Kolkata'
+          }) + ' IST',
+          riskFlags: [],
+        },
+        sections: [
+          {
+            id: 'summary',
+            title: 'Summary',
+            content: resumeData.summary || '',
+            order: 1,
+          },
+          {
+            id: 'experience',
+            title: 'Experience',
+            content: resumeData.experience.map(exp => 
+              `${exp.jobTitle} at ${exp.company}\n${exp.startDate} - ${exp.current ? 'Present' : exp.endDate}\n${exp.bullets.filter(Boolean).map(bullet => `• ${bullet}`).join('\n')}`
+            ).join('\n\n'),
+            order: 2,
+          },
+          {
+            id: 'education',
+            title: 'Education',
+            content: resumeData.education.map(edu =>
+              `${edu.degree}${edu.field ? ` in ${edu.field}` : ''}\n${edu.school}\n${edu.startDate} - ${edu.endDate}`
+            ).join('\n\n'),
+            order: 3,
+          },
+          {
+            id: 'skills',
+            title: 'Skills',
+            content: resumeData.skills.join(', '),
+            order: 4,
+          },
+          ...(resumeData.projects && resumeData.projects.length > 0 ? [{
+            id: 'projects',
+            title: 'Projects',
+            content: resumeData.projects.filter(p => p.title || p.description).map(proj =>
+              `${proj.title || 'Project'}\n${proj.description || ''}\n${proj.bullets?.filter(Boolean).map(bullet => `• ${bullet}`).join('\n') || ''}`
+            ).join('\n\n'),
+            order: 5,
+          }] : []),
+        ],
+      };
+
+      // Generate and download DOCX file
+      await exportDocx(documentDraft, {
+        includeComplianceBlock: false,
+        fileName: `resume-${resumeData.personal?.fullName || 'resume'}-${Date.now()}.docx`
+      });
       
     } catch (error) {
       console.error('DOC generation error:', error);
+      // Fallback to text file if DOCX fails
+      const textContent = createResumeDoc(resumeData);
+      const textBlob = new Blob([textContent], { type: 'text/plain' });
+      const textUrl = URL.createObjectURL(textBlob);
+      const textLink = document.createElement('a');
+      textLink.href = textUrl;
+      textLink.download = `resume-${resumeData.personal?.fullName || 'resume'}-${Date.now()}.txt`;
+      document.body.appendChild(textLink);
+      textLink.click();
+      document.body.removeChild(textLink);
+      URL.revokeObjectURL(textUrl);
     }
   };
 
@@ -388,6 +478,9 @@ export default function ResumeReviewPage() {
       // Also generate DOC file
       await generateDocFile(data);
       
+      // Generate add-ons if user paid for them
+      await generateAddons(data);
+      
     } catch (error) {
       console.error('Download error:', error);
       alert('Download failed. Please try again.');
@@ -435,7 +528,7 @@ export default function ResumeReviewPage() {
     );
   }
 
-  const atsScore = Math.min(100, generated?.atsScore ?? 0);
+  const atsScore = displayAtsScore;
 
   return (
     <div className="w-full">
@@ -478,7 +571,7 @@ export default function ResumeReviewPage() {
         ) : (
           <button
             type="button"
-            onClick={() => setShowUnlockModal(true)}
+            onClick={handleMaybeLaterDownload}
             className="rounded-xl border-2 border-amber-300 bg-amber-50 px-5 py-2.5 text-sm font-semibold text-amber-800 hover:bg-amber-100 transition-all"
           >
             Download PDF
@@ -579,12 +672,12 @@ export default function ResumeReviewPage() {
           <ResumePreviewPanel
             data={data}
             onTemplateChange={(tid) => setData((d) => (d ? { ...d, templateId: tid } : d))}
-            onDownload={() => setShowUnlockModal(true)}
+            onDownload={hasPaymentSuccess && resumeId ? handlePaidDownload : handleMaybeLaterDownload}
           />
           <div className="mt-4 hidden lg:flex flex-wrap gap-3">
             <button
               type="button"
-              onClick={() => setShowUnlockModal(true)}
+              onClick={hasPaymentSuccess && resumeId ? handlePaidDownload : handleMaybeLaterDownload}
               className="rounded-xl bg-amber-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-amber-700"
             >
               Download PDF
