@@ -29,12 +29,17 @@ const MODIFIERS: { id: ResumeModifier; label: string }[] = [
 
 // Helper function to detect mobile devices
 const isMobileDevice = () => {
+  if (typeof navigator === "undefined") return false;
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 };
 
 function ensureProjects(data: ResumeData): ResumeData {
   if (data.projects && data.projects.length > 0) return data;
-  return { ...data, projects: [createEmptyProject(crypto.randomUUID?.() ?? "proj-1")] };
+  return { ...data, projects: [createEmptyProject(
+  (typeof crypto !== "undefined" && crypto.randomUUID)
+    ? crypto.randomUUID()
+    : Math.random().toString(36).slice(2)
+)] };
 }
 
 export default function ResumeReviewPage() {
