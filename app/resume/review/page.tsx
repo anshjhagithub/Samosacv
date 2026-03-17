@@ -122,92 +122,276 @@ export default function ResumeReviewPage() {
     if (!data) return;
     
     try {
-      // Create HTML content for PDF
-      const htmlContent = createResumeHtml(data);
+      // Create a hidden container to render the resume with actual template
+      const container = document.createElement('div');
+      container.style.position = 'absolute';
+      container.style.top = '-9999px';
+      container.style.left = '-9999px';
+      container.style.width = '21cm';
+      container.style.backgroundColor = 'white';
+      document.body.appendChild(container);
+
+      // Import required modules
+      const { renderToString } = await import('react-dom/server');
+      const { ResumePreview } = await import('@/components/resume/ResumePreview');
+      const html2canvas = (await import('html2canvas-pro')).default;
+      const jsPDF = (await import('jspdf')).default;
       
-      // Download PDF (as HTML for now)
-      const htmlBlob = new Blob([htmlContent], { type: 'text/html' });
-      const htmlUrl = URL.createObjectURL(htmlBlob);
-      const htmlLink = document.createElement('a');
-      htmlLink.href = htmlUrl;
-      htmlLink.download = `resume-${data.personal?.fullName || 'document'}-${Date.now()}.html`;
-      document.body.appendChild(htmlLink);
-      htmlLink.click();
-      document.body.removeChild(htmlLink);
-      URL.revokeObjectURL(htmlUrl);
+      // Render the actual resume template
+      const resumeHtml = renderToString(<ResumePreview data={data} />);
+      container.innerHTML = resumeHtml;
       
-      // Create DOC content
-      const docContent = createResumeDoc(data);
-      const docBlob = new Blob([docContent], { type: 'application/msword' });
-      const docUrl = URL.createObjectURL(docBlob);
-      const docLink = document.createElement('a');
-      docLink.href = docUrl;
-      docLink.download = `resume-${data.personal?.fullName || 'document'}-${Date.now()}.doc`;
-      document.body.appendChild(docLink);
-      docLink.click();
-      document.body.removeChild(docLink);
-      URL.revokeObjectURL(docUrl);
+      // Wait for images to load
+      const images = container.querySelectorAll('img');
+      await Promise.all(Array.from(images).map(img => {
+        if (img.complete) return Promise.resolve();
+        return new Promise((resolve) => {
+          img.onload = resolve;
+          img.onerror = resolve;
+        });
+      }));
+      
+      // Generate PDF from the rendered template
+      const canvas = await html2canvas(container.firstElementChild as HTMLElement, { 
+        scale: 2, 
+        useCORS: true, 
+        backgroundColor: '#ffffff',
+        width: 794, // A4 width at 96 DPI
+        height: 1123 // A4 height at 96 DPI
+      });
+      
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      const imgData = canvas.toDataURL('image/png');
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`resume-${data.personal?.fullName || 'resume'}-${Date.now()}.pdf`);
+      
+      // Clean up
+      document.body.removeChild(container);
+      
+      // Generate DOC file with proper styling
+      await generateDocFile(data);
       
     } catch (error) {
       console.error('Download error:', error);
       alert('Download failed. Please try again.');
     }
   };
+  
+  const generateDocFile = async (resumeData: ResumeData) => {
+    try {
+      // Create HTML content for DOC with proper styling
+      const docHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Resume</title>
+          <style>
+            @page {
+              size: A4;
+              margin: 1cm;
+            }
+            body {
+              font-family: 'Times New Roman', serif;
+              font-size: 11pt;
+              line-height: 1.4;
+              color: #333;
+              margin: 0;
+              padding: 20px;
+            }
+            h1 {
+              font-size: 16pt;
+              font-weight: bold;
+              color: #1a1a1a;
+              margin-bottom: 5pt;
+            }
+            h2 {
+              font-size: 12pt;
+              font-weight: bold;
+              color: #1a1a1a;
+              border-bottom: 2px solid #1a1a1a;
+              padding-bottom: 2pt;
+              margin-top: 15pt;
+              margin-bottom: 8pt;
+              text-transform: uppercase;
+              letter-spacing: 1pt;
+            }
+            .contact {
+              font-size: 10pt;
+              margin-bottom: 15pt;
+              color: #666;
+            }
+            .job-title {
+              font-weight: bold;
+              font-size: 11pt;
+            }
+            .company {
+              font-style: italic;
+              color: #555;
+            }
+            .date {
+              float: right;
+              font-size: 10pt;
+              color: #666;
+            }
+            ul {
+              margin-left: 20pt;
+              margin-bottom: 8pt;
+            }
+            li {
+              margin-bottom: 3pt;
+            }
+            .section {
+              margin-bottom: 15pt;
+            }
+          </style>
+        </head>
+        <body>
+          <h1>${resumeData.personal?.fullName || 'Your Name'}</h1>
+          <div class="contact">
+            ${resumeData.personal?.email || ''} ${resumeData.personal?.phone ? `| ${resumeData.personal.phone}` : ''} ${resumeData.personal?.location ? `| ${resumeData.personal.location}` : ''}
+          </div>
+          
+          ${resumeData.summary ? `
+          <div class="section">
+            <h2>Summary</h2>
+            <p>${resumeData.summary}</p>
+          </div>
+          ` : ''}
+          
+          <div class="section">
+            <h2>Experience</h2>
+            ${resumeData.experience.map(exp => `
+              <div style="margin-bottom: 10pt;">
+                <div style="display: flex; justify-content: space-between;">
+                  <span class="job-title">${exp.jobTitle || 'Job Title'}</span>
+                  <span class="date">${exp.startDate} - ${exp.current ? 'Present' : exp.endDate}</span>
+                </div>
+                <div class="company">${exp.company}${exp.location ? `, ${exp.location}` : ''}</div>
+                ${exp.bullets && exp.bullets.length > 0 ? `
+                  <ul>
+                    ${exp.bullets.filter(Boolean).map(bullet => `<li>${bullet}</li>`).join('')}
+                  </ul>
+                ` : ''}
+              </div>
+            `).join('')}
+          </div>
+          
+          <div class="section">
+            <h2>Education</h2>
+            ${resumeData.education.map(edu => `
+              <div style="margin-bottom: 8pt;">
+                <div style="display: flex; justify-content: space-between;">
+                  <span><strong>${edu.degree}${edu.field ? ` in ${edu.field}` : ''}</strong></span>
+                  <span class="date">${edu.startDate} - ${edu.endDate}</span>
+                </div>
+                <div class="company">${edu.school}</div>
+                ${edu.gpa ? `<div style="font-size: 10pt; color: #666;">GPA: ${edu.gpa}</div>` : ''}
+              </div>
+            `).join('')}
+          </div>
+          
+          ${resumeData.skills && resumeData.skills.length > 0 ? `
+          <div class="section">
+            <h2>Skills</h2>
+            <p>${resumeData.skills.join(' · ')}</p>
+          </div>
+          ` : ''}
+          
+          ${resumeData.projects && resumeData.projects.length > 0 ? `
+          <div class="section">
+            <h2>Projects</h2>
+            ${resumeData.projects.filter(p => p.title || p.description).map(proj => `
+              <div style="margin-bottom: 8pt;">
+                <div style="font-weight: bold;">${proj.title || 'Project'}</div>
+                ${proj.description ? `<p>${proj.description}</p>` : ''}
+                ${proj.bullets && proj.bullets.length > 0 ? `
+                  <ul>
+                    ${proj.bullets.filter(Boolean).map(bullet => `<li>${bullet}</li>`).join('')}
+                  </ul>
+                ` : ''}
+              </div>
+            `).join('')}
+          </div>
+          ` : ''}
+        </body>
+        </html>
+      `;
+      
+      // Create and download DOC file
+      const docBlob = new Blob([docHtml], { type: 'application/msword' });
+      const docUrl = URL.createObjectURL(docBlob);
+      const docLink = document.createElement('a');
+      docLink.href = docUrl;
+      docLink.download = `resume-${resumeData.personal?.fullName || 'resume'}-${Date.now()}.doc`;
+      document.body.appendChild(docLink);
+      docLink.click();
+      document.body.removeChild(docLink);
+      URL.revokeObjectURL(docUrl);
+      
+    } catch (error) {
+      console.error('DOC generation error:', error);
+    }
+  };
 
-  const createResumeHtml = (resumeData: ResumeData) => {
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Resume</title>
-        <style>
-          body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
-          .resume-container { max-width: 21cm; margin: 0 auto; }
-          h1 { color: #333; }
-          h2 { color: #555; border-bottom: 2px solid #eee; padding-bottom: 5px; }
-          h3 { color: #666; }
-          .contact { color: #666; margin-bottom: 20px; }
-          ul { padding-left: 20px; }
-          li { margin-bottom: 5px; }
-        </style>
-      </head>
-      <body>
-        <div class="resume-container">
-          <h1>${resumeData.personal?.fullName || 'Resume'}</h1>
-          <p class="contact">${resumeData.personal?.title || ''}</p>
-          <p class="contact">${resumeData.personal?.email || ''} | ${resumeData.personal?.phone || ''}</p>
-          
-          <h2>Summary</h2>
-          <p>${resumeData.summary || ''}</p>
-          
-          <h2>Experience</h2>
-          ${resumeData.experience.map(exp => `
-            <div style="margin-bottom: 20px;">
-              <h3>${exp.jobTitle} at ${exp.company}</h3>
-              <p style="color: #666;">${exp.startDate} - ${exp.endDate}</p>
-              <ul>
-                ${exp.bullets.map(bullet => `<li>${bullet}</li>`).join('')}
-              </ul>
-            </div>
-          `).join('')}
-          
-          <h2>Education</h2>
-          ${resumeData.education.map(edu => `
-            <div style="margin-bottom: 15px;">
-              <h3>${edu.degree} in ${edu.field}</h3>
-              <p style="color: #666;">${edu.school}</p>
-              <p style="color: #666;">${edu.startDate} - ${edu.endDate}</p>
-            </div>
-          `).join('')}
-          
-          <h2>Skills</h2>
-          <p>${(resumeData.skills || []).join(', ')}</p>
-        </div>
-      </body>
-      </html>
-    `;
+  const handlePaidDownload = async () => {
+    if (!data) return;
+    
+    try {
+      // Use the same PDF generation as "Maybe later" for consistency
+      const container = document.createElement('div');
+      container.style.position = 'absolute';
+      container.style.top = '-9999px';
+      container.style.left = '-9999px';
+      container.style.width = '21cm';
+      container.style.backgroundColor = 'white';
+      document.body.appendChild(container);
+
+      const { renderToString } = await import('react-dom/server');
+      const { ResumePreview } = await import('@/components/resume/ResumePreview');
+      const html2canvas = (await import('html2canvas-pro')).default;
+      const jsPDF = (await import('jspdf')).default;
+      
+      const resumeHtml = renderToString(<ResumePreview data={data} />);
+      container.innerHTML = resumeHtml;
+      
+      const images = container.querySelectorAll('img');
+      await Promise.all(Array.from(images).map(img => {
+        if (img.complete) return Promise.resolve();
+        return new Promise((resolve) => {
+          img.onload = resolve;
+          img.onerror = resolve;
+        });
+      }));
+      
+      const canvas = await html2canvas(container.firstElementChild as HTMLElement, { 
+        scale: 2, 
+        useCORS: true, 
+        backgroundColor: '#ffffff',
+        width: 794,
+        height: 1123
+      });
+      
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      const imgData = canvas.toDataURL('image/png');
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`resume-${data.personal?.fullName || 'resume'}-${Date.now()}.pdf`);
+      
+      document.body.removeChild(container);
+      
+      // Also generate DOC file
+      await generateDocFile(data);
+      
+    } catch (error) {
+      console.error('Download error:', error);
+      alert('Download failed. Please try again.');
+    }
   };
 
   const createResumeDoc = (resumeData: ResumeData) => {
@@ -286,29 +470,7 @@ export default function ResumeReviewPage() {
         {hasPaymentSuccess && resumeId ? (
           <button
             type="button"
-            onClick={async () => {
-              // Trigger actual download since payment was successful
-              try {
-                const response = await fetch(`/api/resume/download?resume_id=${resumeId}`);
-                if (response.ok) {
-                  const html = await response.text();
-                  const blob = new Blob([html], { type: 'text/html' });
-                  const url = URL.createObjectURL(blob);
-                  const link = document.createElement('a');
-                  link.href = url;
-                  link.download = `resume-${Date.now()}.html`;
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                  URL.revokeObjectURL(url);
-                } else {
-                  alert('Download failed. Please try again.');
-                }
-              } catch (error) {
-                console.error('Download error:', error);
-                alert('Download failed. Please try again.');
-              }
-            }}
+            onClick={handlePaidDownload}
             className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 transition-all shadow-md shadow-emerald-900/10"
           >
             Download Resume
