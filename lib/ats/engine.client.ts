@@ -32,7 +32,7 @@ function findRoleIntelligence(targetRole: string) {
   const exact = intel[targetRole];
   if (exact) return exact;
   
-  // Fuzzy matching: check if any role contains the target or vice versa
+  // Fuzzy matching: check if any role contains target or vice versa
   const roleKeys = Object.keys(intel);
   const lowerTarget = targetRole.toLowerCase();
   
@@ -127,7 +127,7 @@ function scoreActionVerbUsage(resumeText: string): number {
     'coordinated', 'organized', 'planned', 'executed', 'directed', 'supervised', 'trained', 'mentored',
     'analyzed', 'researched', 'investigated', 'evaluated', 'assessed', 'monitored', 'tracked', 'measured',
     'collaborated', 'partnered', 'worked', 'teamed', 'joined', 'supported', 'assisted', 'helped',
-    'solved', 'fixed', 'resolved', 'addressed', 'handled', 'managed', 'maintained', 'updated', 'upgraded'
+    'solved', 'fixed', 'resolved', 'addressed', 'handled', 'maintained', 'updated', 'upgraded'
   ];
   
   const lowerText = resumeText.toLowerCase();
