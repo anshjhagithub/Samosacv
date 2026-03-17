@@ -168,6 +168,26 @@ export default function ResumeReviewPage() {
     const isMobile = isMobileDevice();
     
     try {
+      // For mobile, use a simpler approach to avoid memory issues
+      if (isMobile) {
+        // Create a simple text-based resume download for mobile
+        const resumeText = createResumeDoc(data);
+        const blob = new Blob([resumeText], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `resume-${data.personal?.fullName || 'resume'}-${Date.now()}.txt`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        // Show message about PDF generation on desktop
+        alert('For PDF generation, please use a desktop computer. Text version downloaded.');
+        return;
+      }
+      
+      // Desktop PDF generation
       // Create a hidden container to render the resume with actual template
       const container = document.createElement('div');
       container.style.position = 'absolute';
@@ -178,14 +198,17 @@ export default function ResumeReviewPage() {
       document.body.appendChild(container);
 
       // Import required modules
-      const { renderToString } = await import('react-dom/server');
       const { ResumePreview } = await import('@/components/resume/ResumePreview');
       const html2canvas = (await import('html2canvas-pro')).default;
       const jsPDF = (await import('jspdf')).default;
       
-      // Render the actual resume template
-      const resumeHtml = renderToString(<ResumePreview data={data} />);
-      container.innerHTML = resumeHtml;
+      // Use client-side rendering instead of server-side rendering
+      const { createRoot } = await import('react-dom/client');
+      const root = createRoot(container);
+      root.render(<ResumePreview data={data} />);
+      
+      // Wait for the component to render
+      await new Promise(resolve => setTimeout(resolve, 100));
       
       // Wait for images to load
       const images = container.querySelectorAll('img');
@@ -212,8 +235,8 @@ export default function ResumeReviewPage() {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      // For mobile, use simpler rendering to avoid memory issues
-      const scale = isMobile ? 1.5 : 2;
+      // Use standard scale for desktop
+      const scale = 2;
       
       for (let i = 0; i < numPages; i++) {
         if (i > 0) {
@@ -241,18 +264,17 @@ export default function ResumeReviewPage() {
         document.body.appendChild(pageContainer);
         
         try {
-          // Generate canvas for this page with error handling
+          // Generate canvas for this page
           const canvas = await html2canvas(pageContainer, { 
             scale, 
             useCORS: true, 
             backgroundColor: '#ffffff',
             width: 794,
             height: height,
-            // Mobile-specific settings
             logging: false,
             removeContainer: false,
             onclone: (clonedDoc) => {
-              // Remove any problematic elements for mobile
+              // Remove any problematic elements
               const videos = clonedDoc.querySelectorAll('video');
               videos.forEach(v => v.remove());
             }
@@ -266,7 +288,7 @@ export default function ResumeReviewPage() {
           console.error('Canvas generation error:', canvasError);
           // Fallback: add a blank page with text
           pdf.setFontSize(12);
-          pdf.text('Resume content could not be rendered on this device.', 20, 20);
+          pdf.text('Resume content could not be rendered.', 20, 20);
           pdf.text(`Page ${i + 1} of ${numPages}`, 20, 30);
         }
         
@@ -274,11 +296,12 @@ export default function ResumeReviewPage() {
         document.body.removeChild(pageContainer);
       }
       
-      // Save PDF with mobile-friendly filename
+      // Save PDF
       const filename = `resume-${data.personal?.fullName || 'resume'}-${Date.now()}.pdf`;
       pdf.save(filename);
       
       // Clean up
+      root.unmount();
       document.body.removeChild(container);
       
       // Generate DOC file with proper styling
@@ -289,11 +312,22 @@ export default function ResumeReviewPage() {
       
     } catch (error) {
       console.error('Download error:', error);
-      // Show more helpful error message for mobile
-      if (isMobile) {
-        alert('Download failed on mobile. Please try on a desktop computer or check your browser settings.');
-      } else {
-        alert('Download failed. Please try again.');
+      // Fallback to text download
+      try {
+        const resumeText = createResumeDoc(data);
+        const blob = new Blob([resumeText], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `resume-${data.personal?.fullName || 'resume'}-${Date.now()}.txt`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        alert('PDF generation failed. Text version downloaded instead.');
+      } catch (fallbackError) {
+        console.error('Fallback download failed:', fallbackError);
+        alert('Download failed. Please try again on a desktop computer.');
       }
     }
   };
@@ -481,8 +515,30 @@ export default function ResumeReviewPage() {
     const isMobile = isMobileDevice();
     
     try {
+      // For mobile, use a simpler approach to avoid memory issues
+      if (isMobile) {
+        // Create a simple text-based resume download for mobile
+        const resumeText = createResumeDoc(data);
+        const blob = new Blob([resumeText], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `resume-${data.personal?.fullName || 'resume'}-${Date.now()}.txt`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        // Still try to generate add-ons even on mobile
+        await generateAddons(data);
+        
+        // Show message about PDF generation on desktop
+        alert('For PDF generation, please use a desktop computer. Text version downloaded.');
+        return;
+      }
       
-      // Use the same PDF generation as "Maybe later" for consistency
+      // Desktop PDF generation
+      // Create a hidden container to render the resume with actual template
       const container = document.createElement('div');
       container.style.position = 'absolute';
       container.style.top = '-9999px';
@@ -491,14 +547,20 @@ export default function ResumeReviewPage() {
       container.style.backgroundColor = 'white';
       document.body.appendChild(container);
 
-      const { renderToString } = await import('react-dom/server');
+      // Import required modules
       const { ResumePreview } = await import('@/components/resume/ResumePreview');
       const html2canvas = (await import('html2canvas-pro')).default;
       const jsPDF = (await import('jspdf')).default;
       
-      const resumeHtml = renderToString(<ResumePreview data={data} />);
-      container.innerHTML = resumeHtml;
+      // Use client-side rendering instead of server-side rendering
+      const { createRoot } = await import('react-dom/client');
+      const root = createRoot(container);
+      root.render(<ResumePreview data={data} />);
       
+      // Wait for the component to render
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Wait for images to load
       const images = container.querySelectorAll('img');
       await Promise.all(Array.from(images).map(img => {
         if (img.complete) return Promise.resolve();
@@ -523,8 +585,8 @@ export default function ResumeReviewPage() {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      // For mobile, use simpler rendering to avoid memory issues
-      const scale = isMobile ? 1.5 : 2;
+      // Use standard scale for desktop
+      const scale = 2;
       
       for (let i = 0; i < numPages; i++) {
         if (i > 0) {
@@ -552,18 +614,17 @@ export default function ResumeReviewPage() {
         document.body.appendChild(pageContainer);
         
         try {
-          // Generate canvas for this page with error handling
+          // Generate canvas for this page
           const canvas = await html2canvas(pageContainer, { 
             scale, 
             useCORS: true, 
             backgroundColor: '#ffffff',
             width: 794,
             height: height,
-            // Mobile-specific settings
             logging: false,
             removeContainer: false,
             onclone: (clonedDoc) => {
-              // Remove any problematic elements for mobile
+              // Remove any problematic elements
               const videos = clonedDoc.querySelectorAll('video');
               videos.forEach(v => v.remove());
             }
@@ -577,7 +638,7 @@ export default function ResumeReviewPage() {
           console.error('Canvas generation error:', canvasError);
           // Fallback: add a blank page with text
           pdf.setFontSize(12);
-          pdf.text('Resume content could not be rendered on this device.', 20, 20);
+          pdf.text('Resume content could not be rendered.', 20, 20);
           pdf.text(`Page ${i + 1} of ${numPages}`, 20, 30);
         }
         
@@ -585,10 +646,12 @@ export default function ResumeReviewPage() {
         document.body.removeChild(pageContainer);
       }
       
-      // Save PDF with mobile-friendly filename
+      // Save PDF
       const filename = `resume-${data.personal?.fullName || 'resume'}-${Date.now()}.pdf`;
       pdf.save(filename);
       
+      // Clean up
+      root.unmount();
       document.body.removeChild(container);
       
       // Also generate DOC file
@@ -599,11 +662,26 @@ export default function ResumeReviewPage() {
       
     } catch (error) {
       console.error('Download error:', error);
-      // Show more helpful error message for mobile
-      if (isMobile) {
-        alert('Download failed on mobile. Please try on a desktop computer or check your browser settings.');
-      } else {
-        alert('Download failed. Please try again.');
+      // Fallback to text download
+      try {
+        const resumeText = createResumeDoc(data);
+        const blob = new Blob([resumeText], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `resume-${data.personal?.fullName || 'resume'}-${Date.now()}.txt`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        // Still try to generate add-ons
+        await generateAddons(data);
+        
+        alert('PDF generation failed. Text version downloaded instead.');
+      } catch (fallbackError) {
+        console.error('Fallback download failed:', fallbackError);
+        alert('Download failed. Please try again on a desktop computer.');
       }
     }
   };
