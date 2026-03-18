@@ -57,6 +57,7 @@ export default function ResumeReviewPage() {
   const [hasPaymentSuccess, setHasPaymentSuccess] = useState(false);
   const [resumeId, setResumeId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [purchasedAddons, setPurchasedAddons] = useState<string[]>([]);
 
   useEffect(() => {
     try {
@@ -85,6 +86,20 @@ export default function ResumeReviewPage() {
       const res = await fetch(`/api/resume/download?resume_id=${resumeId}`);
       if (res.ok) {
         setHasPaymentSuccess(true);
+        // Also fetch order to get addons
+        try {
+          const orderRes = await fetch(`/api/get-order?resume_id=${resumeId}`);
+          if (orderRes.ok) {
+            const orderData = await orderRes.json();
+            const lineItems = orderData.line_items || {};
+            const addons = Object.entries(lineItems)
+              .filter(([slug, purchased]) => purchased === true && slug !== 'resume_pdf')
+              .map(([slug]) => slug);
+            setPurchasedAddons(addons);
+          }
+        } catch (e) {
+          console.error("Failed to fetch addons", e);
+        }
       } else if (res.status === 402) {
         setHasPaymentSuccess(false);
       }
@@ -195,10 +210,30 @@ export default function ResumeReviewPage() {
       const html2canvas = (await import('html2canvas-pro')).default;
       const jsPDF = (await import('jspdf')).default;
       
+      let targetEl = el as HTMLElement;
+      let wrapper: HTMLDivElement | null = null;
+      
+      if (isMobile) {
+        // Clone into a fixed width container to avoid mobile text scaling bugs
+        wrapper = document.createElement('div');
+        wrapper.style.position = 'absolute';
+        wrapper.style.top = '-9999px';
+        wrapper.style.left = '-9999px';
+        wrapper.style.width = '794px'; // ~A4 width
+        wrapper.style.backgroundColor = 'white';
+        const clone = el.cloneNode(true) as HTMLElement;
+        wrapper.appendChild(clone);
+        document.body.appendChild(wrapper);
+        targetEl = clone;
+        
+        // Wait a small tick to let css apply to the cloned node
+        await new Promise(r => setTimeout(r, 50));
+      }
+      
       const scale = isMobile ? 1.5 : 2;
 
       // Generate canvas with mobile optimizations
-      const canvas = await html2canvas(el as HTMLElement, {
+      const canvas = await html2canvas(targetEl, {
         scale,
         useCORS: true,
         backgroundColor: '#ffffff',
@@ -207,6 +242,10 @@ export default function ResumeReviewPage() {
         foreignObjectRendering: false,
         imageTimeout: 15000, // 15 seconds timeout for images
       });
+      
+      if (wrapper && wrapper.parentNode) {
+        wrapper.parentNode.removeChild(wrapper);
+      }
       
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -384,71 +423,50 @@ export default function ResumeReviewPage() {
 
   const generateDocFile = async (resumeData: ResumeData) => {
     try {
-      // Use the existing docx export engine
-      const { exportDocx } = await import('@/engine/export');
+      const el = document.querySelector(".resume-pdf-source");
+      if (!el) {
+        throw new Error("Could not find resume preview on screen to export DOC");
+      }
       
-      // Convert resume data to document draft format
-      const documentDraft = {
-        metadata: {
-          documentId: crypto.randomUUID(),
-          policyVersion: "1.0",
-          category: "corporate" as const,
-          documentType: "brd" as const, // Using a valid document type
-          generatedAt: new Date().toLocaleString('en-IN', { 
-            day: '2-digit', 
-            month: 'short', 
-            year: 'numeric', 
-            hour: '2-digit', 
-            minute: '2-digit',
-            timeZone: 'Asia/Kolkata'
-          }) + ' IST',
-          riskFlags: [],
-        },
-        sections: [
-          {
-            id: 'summary',
-            title: 'Summary',
-            content: resumeData.summary || '',
-            order: 1,
-          },
-          {
-            id: 'experience',
-            title: 'Experience',
-            content: resumeData.experience.map(exp => 
-              `${exp.jobTitle} at ${exp.company}\n${exp.startDate} - ${exp.current ? 'Present' : exp.endDate}\n${exp.bullets.filter(Boolean).map(bullet => `• ${bullet}`).join('\n')}`
-            ).join('\n\n'),
-            order: 2,
-          },
-          {
-            id: 'education',
-            title: 'Education',
-            content: resumeData.education.map(edu =>
-              `${edu.degree}${edu.field ? ` in ${edu.field}` : ''}\n${edu.school}\n${edu.startDate} - ${edu.endDate}`
-            ).join('\n\n'),
-            order: 3,
-          },
-          {
-            id: 'skills',
-            title: 'Skills',
-            content: resumeData.skills.join(', '),
-            order: 4,
-          },
-          ...(resumeData.projects && resumeData.projects.length > 0 ? [{
-            id: 'projects',
-            title: 'Projects',
-            content: resumeData.projects.filter(p => p.title || p.description).map(proj =>
-              `${proj.title || 'Project'}\n${proj.description || ''}\n${proj.bullets?.filter(Boolean).map(bullet => `• ${bullet}`).join('\n') || ''}`
-            ).join('\n\n'),
-            order: 5,
-          }] : []),
-        ],
-      };
+      const clone = el.cloneNode(true) as HTMLElement;
+      
+      // Get all current stylesheets from document head to preserve styling
+      const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+        .map(styleEl => styleEl.outerHTML)
+        .join('\n');
+        
+      const htmlContent = `
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8">
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  @page WordSection1 { size: 595.3pt 841.9pt; margin: 36.0pt 36.0pt 36.0pt 36.0pt; mso-header-margin: 36.0pt; mso-footer-margin: 36.0pt; mso-paper-source: 0; }
+  div.WordSection1 { page: WordSection1; }
+</style>
+${styles}
+</head>
+<body>
+  <div class="WordSection1">
+    ${clone.outerHTML}
+  </div>
+</body>
+</html>
+`;
 
-      // Generate and download DOCX file
-      await exportDocx(documentDraft, {
-        includeComplianceBlock: false,
-        fileName: `resume-${resumeData.personal?.fullName || 'resume'}-${Date.now()}.docx`
+      const blob = new Blob(['\ufeff', htmlContent], {
+        type: 'application/msword'
       });
+      
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `resume-${resumeData.personal?.fullName || 'resume'}-${Date.now()}.doc`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
       
     } catch (error) {
       console.error('DOC generation error:', error);
@@ -482,10 +500,30 @@ export default function ResumeReviewPage() {
       const html2canvas = (await import('html2canvas-pro')).default;
       const jsPDF = (await import('jspdf')).default;
       
+      let targetEl = el as HTMLElement;
+      let wrapper: HTMLDivElement | null = null;
+      
+      if (isMobile) {
+        // Clone into a fixed width container to avoid mobile text scaling bugs
+        wrapper = document.createElement('div');
+        wrapper.style.position = 'absolute';
+        wrapper.style.top = '-9999px';
+        wrapper.style.left = '-9999px';
+        wrapper.style.width = '794px'; // ~A4 width
+        wrapper.style.backgroundColor = 'white';
+        const clone = el.cloneNode(true) as HTMLElement;
+        wrapper.appendChild(clone);
+        document.body.appendChild(wrapper);
+        targetEl = clone;
+        
+        // Wait a small tick to let css apply to the cloned node
+        await new Promise(r => setTimeout(r, 50));
+      }
+      
       const scale = isMobile ? 1.5 : 2;
 
       // Generate canvas with mobile optimizations
-      const canvas = await html2canvas(el as HTMLElement, {
+      const canvas = await html2canvas(targetEl, {
         scale,
         useCORS: true,
         backgroundColor: '#ffffff',
@@ -494,6 +532,10 @@ export default function ResumeReviewPage() {
         foreignObjectRendering: false,
         imageTimeout: 15000, // 15 seconds timeout for images
       });
+      
+      if (wrapper && wrapper.parentNode) {
+        wrapper.parentNode.removeChild(wrapper);
+      }
       
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -617,6 +659,20 @@ export default function ResumeReviewPage() {
           <p className="text-sm text-stone-500">
             Scores below 90 are often rejected by ATS. Use &ldquo;Optimize for ATS&rdquo; or unlock ATS Improver (&#8377;15).
           </p>
+        )}
+        
+        {purchasedAddons.length > 0 && (
+          <div className="w-full mt-3 pt-3 border-t border-stone-100">
+            <span className="text-xs text-stone-500 uppercase tracking-wider block mb-2">Purchased Add-ons</span>
+            <div className="flex gap-2 flex-wrap">
+              {purchasedAddons.map(addon => (
+                <span key={addon} className="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-semibold capitalize border border-emerald-200 shadow-sm">
+                  {addon.replace(/_/g, ' ')}
+                </span>
+              ))}
+            </div>
+            <p className="text-xs text-stone-500 mt-2">These will be automatically generated and included when you download your resume.</p>
+          </div>
         )}
       </div>
 
