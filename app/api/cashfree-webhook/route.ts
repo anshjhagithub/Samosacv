@@ -35,8 +35,7 @@ export async function POST(req: Request) {
       const { error: updateError } = await supabaseAdmin
         .from("orders")
         .update({ 
-          status: "paid",
-          updated_at: new Date().toISOString()
+          status: "paid"
         })
         .eq("order_id", orderId);
 
@@ -53,8 +52,7 @@ export async function POST(req: Request) {
       const { error: updateError } = await supabaseAdmin
         .from("orders")
         .update({ 
-          status: "failed",
-          updated_at: new Date().toISOString()
+          status: "failed"
         })
         .eq("order_id", orderId);
 

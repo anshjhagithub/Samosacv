@@ -39,19 +39,38 @@ export async function POST(req: Request) {
       );
     }
 
-    // Cashfree returns order_status. Let's check if it's PAID
-    if (data.order_status === "PAID") {
+    // Poll /payments as a fallback if order_status is still ACTIVE (lag)
+    let isPaid = data.order_status === "PAID";
+    
+    if (!isPaid) {
+      const paymentsResponse = await fetch(`${cashfreeUrl}/payments`, {
+        headers: {
+          "x-api-version": "2022-09-01",
+          "x-client-id": process.env.CASHFREE_APP_ID!,
+          "x-client-secret": process.env.CASHFREE_SECRET_KEY!,
+        },
+      });
+      if (paymentsResponse.ok) {
+        const paymentsData = await paymentsResponse.json();
+        // Check if any payment attempt was successful
+        if (Array.isArray(paymentsData) && paymentsData.some(p => p.payment_status === "SUCCESS")) {
+          isPaid = true;
+        }
+      }
+    }
+
+    if (isPaid) {
       // Sync to database
       const { error: updateError } = await supabaseAdmin
         .from("orders")
         .update({
-          status: "paid",
-          updated_at: new Date().toISOString(),
+          status: "paid"
         })
         .eq("order_id", orderId);
 
       if (updateError) {
         console.error("Failed to sync paid status to Supabase:", updateError);
+        // Do not fail the request if it's a minor DB issue, but at least we log it
       }
 
       return NextResponse.json({ status: "PAID", verified: true });
