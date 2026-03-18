@@ -16,7 +16,28 @@ function PaymentStatusContent() {
 
   useEffect(() => {
     if (!orderId) { setStatus("unknown"); return; }
-    setStatus("success");
+    
+    // Explicitly verify payment with backend before showing success
+    const verifyPayment = async () => {
+      try {
+        const res = await fetch("/api/verify-payment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId }),
+        });
+        const data = await res.json();
+        
+        if (data.status === "PAID") {
+          setStatus("success");
+        } else {
+          setStatus("failed");
+        }
+      } catch (e) {
+        setStatus("failed");
+      }
+    };
+    
+    verifyPayment();
   }, [orderId]);
 
   // After payment for "resume upload", send user back to /create with order_id so they can complete generation

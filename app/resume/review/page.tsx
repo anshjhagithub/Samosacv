@@ -436,32 +436,40 @@ export default function ResumeReviewPage() {
         .join('\n');
         
       const htmlContent = `
-<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <style>
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-  @page WordSection1 { size: 595.3pt 841.9pt; margin: 36.0pt 36.0pt 36.0pt 36.0pt; mso-header-margin: 36.0pt; mso-footer-margin: 36.0pt; mso-paper-source: 0; }
-  div.WordSection1 { page: WordSection1; }
-</style>
 ${styles}
+</style>
 </head>
 <body>
-  <div class="WordSection1">
-    ${clone.outerHTML}
-  </div>
+${clone.outerHTML}
 </body>
 </html>
 `;
 
-      const blob = new Blob(['\ufeff', htmlContent], {
-        type: 'application/msword'
+      const response = await fetch('/api/generate-docx', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          html: htmlContent,
+          filename: `resume-${resumeData.personal?.fullName || 'resume'}-${Date.now()}.docx`
+        })
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate DOCX file');
+      }
+
+      const blob = await response.blob();
       
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `resume-${resumeData.personal?.fullName || 'resume'}-${Date.now()}.doc`;
+      link.download = `resume-${resumeData.personal?.fullName || 'resume'}-${Date.now()}.docx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
