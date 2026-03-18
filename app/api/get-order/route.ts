@@ -27,7 +27,7 @@ export async function GET(request: Request) {
       .from("orders")
       .select("*")
       .eq("resume_id", resumeId)
-      .eq("status", "paid")
+      .eq("order_status", "paid")
       .order("created_at", { ascending: false })
       .limit(1)
       .single();

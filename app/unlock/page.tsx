@@ -84,8 +84,8 @@ export default function UnlockPage() {
           for (const [slug, selected] of Object.entries(builderCart)) {
             if (selected) base[slug as FeatureSlug] = true;
           }
-          // Clear it so it doesn't persist across sessions
-          localStorage.removeItem('samosa_builder_addon_cart');
+          // Intentionally NOT removing it here because React Strict Mode runs useState initializers twice.
+          // It's safe to leave it, as it gets overwritten each time they navigate from the builder.
         }
       } catch {}
     }

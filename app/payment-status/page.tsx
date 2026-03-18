@@ -54,6 +54,24 @@ function PaymentStatusContent() {
       if (typeof window !== "undefined") {
         localStorage.setItem(`payment_success_${orderId}`, "true");
         localStorage.setItem("samosa_last_order_id", orderId);
+        
+        // Automatic Chrome redirect for UPI Apps on Android
+        const ua = navigator.userAgent || navigator.vendor || (window as any).opera;
+        const isAndroid = /android/i.test(ua);
+        // "wv" is the standard marker for Android WebViews (used by GPay, PhonePe, etc.)
+        const isWebView = /wv/i.test(ua) || /FB/i.test(ua) || /Instagram/i.test(ua);
+        
+        if (isAndroid && isWebView) {
+          const isRegenOrder = orderId?.startsWith("regen_") ?? false;
+          const targetPath = isRegenOrder ? "/builder" : "/resume/review";
+          
+          const rawHost = window.location.host;
+          const intentUrl = `intent://${rawHost}${targetPath}#Intent;scheme=https;package=com.android.chrome;end;`;
+          
+          setTimeout(() => {
+            window.location.href = intentUrl;
+          }, 1500); // give them 1.5s to see 'Success' before bouncing
+        }
       }
     }
   }, [status, orderId, returnTo]);
@@ -108,9 +126,14 @@ function PaymentStatusContent() {
                     Go to Builder
                   </Link>
                 ) : (
-                  <Link href="/resume/review" className="inline-block rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white hover:bg-emerald-700 transition-all shadow-md shadow-emerald-900/10">
-                    Download Resume
-                  </Link>
+                  <div className="flex flex-col items-center gap-3">
+                    <Link href="/resume/review" className="inline-block rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white hover:bg-emerald-700 transition-all shadow-md shadow-emerald-900/10">
+                      Download Resume
+                    </Link>
+                    <p className="text-[10px] text-stone-400 max-w-[200px] leading-tight mt-1">
+                      If downloading fails in this app, tap the three dots above and select "Open in Chrome".
+                    </p>
+                  </div>
                 )}
               </>
             )}
