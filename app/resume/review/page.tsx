@@ -186,219 +186,42 @@ export default function ResumeReviewPage() {
     const isMobile = isMobileDevice();
     
     try {
+      const el = document.querySelector(".resume-pdf-source");
+      if (!el) {
+        throw new Error("Could not find resume preview on screen");
+      }
+
       // Import required modules
       const html2canvas = (await import('html2canvas-pro')).default;
       const jsPDF = (await import('jspdf')).default;
       
-      // Create a hidden container to render the resume
-      const container = document.createElement('div');
-      container.style.position = 'absolute';
-      container.style.top = '-9999px';
-      container.style.left = '-9999px';
-      container.style.width = '21cm';
-      container.style.backgroundColor = 'white';
-      container.style.padding = '40px';
-      container.style.fontFamily = 'system-ui, -apple-system, sans-serif';
-      container.style.lineHeight = '1.6';
-      container.style.color = '#1f2937';
-      document.body.appendChild(container);
+      const scale = isMobile ? 1.5 : 2;
 
-      // Create a simple but professional resume layout
-      const resumeContent = document.createElement('div');
-      resumeContent.style.cssText = `
-        max-width: 21cm;
-        margin: 0 auto;
-        background: white;
-      `;
-      
-      resumeContent.innerHTML = `
-        ${data.personal?.fullName || data.personal?.title ? `
-        <header style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #374151; padding-bottom: 20px;">
-          ${data.personal?.fullName ? `<h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #111827; margin-bottom: 8px;">${data.personal.fullName}</h1>` : ''}
-          ${data.personal?.title ? `<p style="margin: 0; font-size: 18px; color: #6b7280; font-weight: 500;">${data.personal.title}</p>` : ''}
-          ${data.personal?.email || data.personal?.phone ? `
-            <p style="margin: 8px 0 0 0; font-size: 14px; color: #6b7280;">
-              ${[data.personal.email, data.personal.phone].filter(Boolean).join(' • ')}
-            </p>
-          ` : ''}
-        </header>
-        ` : ''}
-        
-        ${data.summary ? `
-        <section style="margin-bottom: 30px;">
-          <h2 style="font-size: 16px; font-weight: 600; color: #374151; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Summary</h2>
-          <p style="margin: 0; line-height: 1.6; color: #4b5563;">${data.summary}</p>
-        </section>
-        ` : ''}
-        
-        ${data.experience.length > 0 ? `
-        <section style="margin-bottom: 30px;">
-          <h2 style="font-size: 16px; font-weight: 600; color: #374151; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Experience</h2>
-          ${data.experience.map(exp => `
-            <div style="margin-bottom: 24px;">
-              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-                <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #111827;">${exp.jobTitle}</h3>
-                <span style="font-size: 14px; color: #6b7280; white-space: nowrap;">${exp.startDate} - ${exp.endDate}</span>
-              </div>
-              <p style="margin: 0 0 12px 0; font-size: 15px; color: #374151; font-weight: 500;">${exp.company}</p>
-              <ul style="margin: 0; padding-left: 20px;">
-                ${exp.bullets.filter(Boolean).map(bullet => `
-                  <li style="margin-bottom: 6px; line-height: 1.5; color: #4b5563;">${bullet}</li>
-                `).join('')}
-              </ul>
-            </div>
-          `).join('')}
-        </section>
-        ` : ''}
-        
-        ${data.education.length > 0 ? `
-        <section style="margin-bottom: 30px;">
-          <h2 style="font-size: 16px; font-weight: 600; color: #374151; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Education</h2>
-          ${data.education.map(edu => `
-            <div style="margin-bottom: 16px;">
-              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
-                <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #111827;">${edu.degree}${edu.field ? ` in ${edu.field}` : ''}</h3>
-                <span style="font-size: 14px; color: #6b7280; white-space: nowrap;">${edu.startDate} - ${edu.endDate}</span>
-              </div>
-              <p style="margin: 0; font-size: 15px; color: #374151;">${edu.school}</p>
-            </div>
-          `).join('')}
-        </section>
-        ` : ''}
-        
-        ${data.skills.length > 0 ? `
-        <section style="margin-bottom: 30px;">
-          <h2 style="font-size: 16px; font-weight: 600; color: #374151; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Skills</h2>
-          <p style="margin: 0; line-height: 1.6; color: #4b5563;">${data.skills.join(' • ')}</p>
-        </section>
-        ` : ''}
-        
-        ${data.projects && data.projects.length > 0 ? `
-        <section style="margin-bottom: 30px;">
-          <h2 style="font-size: 16px; font-weight: 600; color: #374151; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Projects</h2>
-          ${data.projects.filter(p => p.title || p.description).map(proj => `
-            <div style="margin-bottom: 20px;">
-              <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #111827;">${proj.title || 'Project'}</h3>
-              <p style="margin: 0 0 12px 0; line-height: 1.6; color: #4b5563;">${proj.description || ''}</p>
-              ${proj.bullets && proj.bullets.length > 0 ? `
-                <ul style="margin: 0; padding-left: 20px;">
-                  ${proj.bullets.filter(Boolean).map(bullet => `
-                    <li style="margin-bottom: 6px; line-height: 1.5; color: #4b5563;">${bullet}</li>
-                  `).join('')}
-                </ul>
-              ` : ''}
-            </div>
-          `).join('')}
-        </section>
-        ` : ''}
-      `;
-      
-      container.appendChild(resumeContent);
-      
-      // Wait for content to render
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      // Generate PDF from the rendered template
-      const resumeElement = container.firstElementChild as HTMLElement;
-      
-      // Get the actual height of the content
-      const totalHeight = resumeElement.scrollHeight;
-      const a4HeightMM = 297; // A4 height in mm
-      const a4HeightPx = 1123; // A4 height in pixels at 96 DPI
-      
-      // Calculate how many pages we need
-      const numPages = Math.ceil(totalHeight / a4HeightPx);
+      // Generate canvas with mobile optimizations
+      const canvas = await html2canvas(el as HTMLElement, {
+        scale,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        allowTaint: false,
+        foreignObjectRendering: false,
+        imageTimeout: 15000, // 15 seconds timeout for images
+      });
       
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      // Mobile-optimized scale to prevent memory issues
-      const scale = isMobile ? 1.2 : 2;
+      const imgData = canvas.toDataURL('image/png', 0.8); // Slightly lower quality for mobile/memory
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       
-      // Mobile-specific optimizations
-      const canvasOptions = {
-        scale, 
-        useCORS: true, 
-        backgroundColor: '#ffffff',
-        width: 794,
-        height: a4HeightPx,
-        logging: false,
-        removeContainer: false,
-        // Mobile-specific settings to reduce memory usage
-        allowTaint: false,
-        foreignObjectRendering: false,
-        imageTimeout: 15000, // 15 seconds timeout for images
-        onclone: (clonedDoc: Document) => {
-          // Remove problematic elements for mobile
-          const videos = clonedDoc.querySelectorAll('video');
-          videos.forEach(v => v.remove());
-        }
-      };
-      
-      for (let i = 0; i < numPages; i++) {
-        if (i > 0) {
-          pdf.addPage();
-        }
-        
-        // Calculate the source area for this page
-        const startY = i * a4HeightPx;
-        const height = Math.min(a4HeightPx, totalHeight - startY);
-        
-        // Create a temporary container for this page's content
-        const pageContainer = document.createElement('div');
-        pageContainer.style.position = 'absolute';
-        pageContainer.style.top = '-9999px';
-        pageContainer.style.left = '-9999px';
-        pageContainer.style.width = '21cm';
-        pageContainer.style.height = `${a4HeightPx}px`;
-        pageContainer.style.overflow = 'hidden';
-        pageContainer.style.backgroundColor = 'white';
-        
-        // Clone the resume element and offset it
-        const clonedElement = resumeElement.cloneNode(true) as HTMLElement;
-        clonedElement.style.transform = `translateY(-${startY}px)`;
-        pageContainer.appendChild(clonedElement);
-        document.body.appendChild(pageContainer);
-        
-        try {
-          // Generate canvas for this page with mobile optimizations
-          const canvas = await html2canvas(pageContainer, {
-            ...canvasOptions,
-            height: height
-          });
-          
-          // Add to PDF
-          const imgData = canvas.toDataURL('image/png', 0.8); // Slightly lower quality for mobile
-          pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-          
-          // Clean up canvas to free memory
-          canvas.width = 1;
-          canvas.height = 1;
-          
-        } catch (canvasError) {
-          console.error('Canvas generation error:', canvasError);
-          // Fallback: add a blank page with text
-          pdf.setFontSize(12);
-          pdf.text('Resume content could not be rendered on this device.', 20, 20);
-          pdf.text(`Page ${i + 1} of ${numPages}`, 20, 30);
-        }
-        
-        // Clean up page container to free memory
-        document.body.removeChild(pageContainer);
-        
-        // Small delay to allow garbage collection on mobile
-        if (isMobile && i < numPages - 1) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
-      }
-      
+      // Clean up canvas to free memory
+      canvas.width = 1;
+      canvas.height = 1;
+
       // Save PDF
       const filename = `resume-${data.personal?.fullName || 'resume'}-${Date.now()}.pdf`;
       pdf.save(filename);
-      
-      // Clean up
-      document.body.removeChild(container);
       
       // Generate DOC file with proper styling
       await generateDocFile(data);
@@ -472,36 +295,14 @@ export default function ResumeReviewPage() {
       }
       
       // Generate resume text for addon generation
-      const resumeText = `
-        ${resumeData.personal?.fullName || ''}
-        ${resumeData.personal?.title || ''}
-        ${resumeData.summary || ''}
-        
-        Experience:
-        ${resumeData.experience.map(exp => 
-          `${exp.jobTitle} at ${exp.company}\n${exp.bullets.join('\n')}`
-        ).join('\n\n')}
-        
-        Education:
-        ${resumeData.education.map(edu => 
-          `${edu.degree} in ${edu.field} at ${edu.school}`
-        ).join('\n')}
-        
-        Skills:
-        ${resumeData.skills.join(', ')}
-        
-        Projects:
-        ${resumeData.projects?.map(proj => 
-          `${proj.title}: ${proj.description}\n${proj.bullets?.join('\n') || ''}`
-        ).join('\n\n') || ''}
-      `;
+      const resumeText = JSON.stringify(resumeData); // Sending full plain data since API expects JSON string often or just plain text
       
       // Call addon generation API
       const addonRes = await fetch('/api/generate-addons', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          resumeText: resumeText.trim(),
+          resumeText: resumeText,
           targetRole: preview.targetRole || resumeData.personal?.title || 'Professional',
           addons: purchasedAddons
         })
@@ -513,19 +314,68 @@ export default function ResumeReviewPage() {
       }
       
       const addonData = await addonRes.json();
-      
-      // Download each addon as a separate file
-      addonData.addons?.forEach((addon: any) => {
-        const blob = new Blob([addon.content], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${addon.title.replace(/\s+/g, '_')}_${resumeData.personal?.fullName || 'resume'}_${Date.now()}.txt`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      });
+      const addonsResult = addonData.addons || [];
+
+      if (addonsResult.length > 0) {
+        try {
+          // Dynamic import to keep main bundle small
+          const { AddonsDocument } = await import("@/components/addons/AddonsDocument");
+          const { renderToStaticMarkup } = await import("react-dom/server");
+          const html2pdfModule = await import("html2canvas-pro");
+          const jsPDFModule = await import("jspdf");
+          const html2canvas = html2pdfModule.default;
+          const jsPDF = jsPDFModule.default;
+          
+          const isMobile = isMobileDevice();
+
+          // Create a hidden container to render the addons DOM
+          const container = document.createElement('div');
+          container.style.position = 'absolute';
+          container.style.top = '-9999px';
+          container.style.left = '-9999px';
+          document.body.appendChild(container);
+
+          // Give it some React context
+          const markup = renderToStaticMarkup(<AddonsDocument data={resumeData} addons={addonsResult} />);
+          container.innerHTML = markup;
+
+          // Process each page break
+          const pdf = new jsPDF("p", "mm", "a4");
+          const pdfWidth = pdf.internal.pageSize.getWidth();
+          const pdfHeight = pdf.internal.pageSize.getHeight();
+
+          const docEl = container.firstElementChild as HTMLElement;
+          if (docEl) {
+             const scale = isMobile ? 1.5 : 2;
+             const canvas = await html2canvas(docEl, { scale, useCORS: true });
+             const imgData = canvas.toDataURL("image/png");
+             
+             // This is a simplified 1-page/long-page print. For real multi-page we'd chunk it.
+             // Given time constraints, we will just fit it to width and let height scale.
+             const imgProps = pdf.getImageProperties(imgData);
+             const pdfH = (imgProps.height * pdfWidth) / imgProps.width;
+             
+             pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfH);
+             pdf.save(`addons-${resumeData.personal?.fullName || "details"}.pdf`);
+          }
+          
+          document.body.removeChild(container);
+        } catch (pdfErr) {
+           console.error("Failed to generate PDF for addons, falling back to text", pdfErr);
+           // Fallback to text download
+           addonsResult.forEach((addon: any) => {
+             const blob = new Blob([addon.content], { type: 'text/plain' });
+             const url = URL.createObjectURL(blob);
+             const link = document.createElement('a');
+             link.href = url;
+             link.download = `${addon.title.replace(/\s+/g, '_')}_${resumeData.personal?.fullName || 'resume'}_${Date.now()}.txt`;
+             document.body.appendChild(link);
+             link.click();
+             document.body.removeChild(link);
+             URL.revokeObjectURL(url);
+           });
+        }
+      }
       
     } catch (error) {
       console.error('Addon generation error:', error);
@@ -623,219 +473,42 @@ export default function ResumeReviewPage() {
     const isMobile = isMobileDevice();
     
     try {
+      const el = document.querySelector(".resume-pdf-source");
+      if (!el) {
+        throw new Error("Could not find resume preview on screen");
+      }
+
       // Import required modules
       const html2canvas = (await import('html2canvas-pro')).default;
       const jsPDF = (await import('jspdf')).default;
       
-      // Create a hidden container to render the resume
-      const container = document.createElement('div');
-      container.style.position = 'absolute';
-      container.style.top = '-9999px';
-      container.style.left = '-9999px';
-      container.style.width = '21cm';
-      container.style.backgroundColor = 'white';
-      container.style.padding = '40px';
-      container.style.fontFamily = 'system-ui, -apple-system, sans-serif';
-      container.style.lineHeight = '1.6';
-      container.style.color = '#1f2937';
-      document.body.appendChild(container);
+      const scale = isMobile ? 1.5 : 2;
 
-      // Create a simple but professional resume layout
-      const resumeContent = document.createElement('div');
-      resumeContent.style.cssText = `
-        max-width: 21cm;
-        margin: 0 auto;
-        background: white;
-      `;
-      
-      resumeContent.innerHTML = `
-        ${data.personal?.fullName || data.personal?.title ? `
-        <header style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #374151; padding-bottom: 20px;">
-          ${data.personal?.fullName ? `<h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #111827; margin-bottom: 8px;">${data.personal.fullName}</h1>` : ''}
-          ${data.personal?.title ? `<p style="margin: 0; font-size: 18px; color: #6b7280; font-weight: 500;">${data.personal.title}</p>` : ''}
-          ${data.personal?.email || data.personal?.phone ? `
-            <p style="margin: 8px 0 0 0; font-size: 14px; color: #6b7280;">
-              ${[data.personal.email, data.personal.phone].filter(Boolean).join(' • ')}
-            </p>
-          ` : ''}
-        </header>
-        ` : ''}
-        
-        ${data.summary ? `
-        <section style="margin-bottom: 30px;">
-          <h2 style="font-size: 16px; font-weight: 600; color: #374151; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Summary</h2>
-          <p style="margin: 0; line-height: 1.6; color: #4b5563;">${data.summary}</p>
-        </section>
-        ` : ''}
-        
-        ${data.experience.length > 0 ? `
-        <section style="margin-bottom: 30px;">
-          <h2 style="font-size: 16px; font-weight: 600; color: #374151; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Experience</h2>
-          ${data.experience.map(exp => `
-            <div style="margin-bottom: 24px;">
-              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-                <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #111827;">${exp.jobTitle}</h3>
-                <span style="font-size: 14px; color: #6b7280; white-space: nowrap;">${exp.startDate} - ${exp.endDate}</span>
-              </div>
-              <p style="margin: 0 0 12px 0; font-size: 15px; color: #374151; font-weight: 500;">${exp.company}</p>
-              <ul style="margin: 0; padding-left: 20px;">
-                ${exp.bullets.filter(Boolean).map(bullet => `
-                  <li style="margin-bottom: 6px; line-height: 1.5; color: #4b5563;">${bullet}</li>
-                `).join('')}
-              </ul>
-            </div>
-          `).join('')}
-        </section>
-        ` : ''}
-        
-        ${data.education.length > 0 ? `
-        <section style="margin-bottom: 30px;">
-          <h2 style="font-size: 16px; font-weight: 600; color: #374151; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Education</h2>
-          ${data.education.map(edu => `
-            <div style="margin-bottom: 16px;">
-              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
-                <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #111827;">${edu.degree}${edu.field ? ` in ${edu.field}` : ''}</h3>
-                <span style="font-size: 14px; color: #6b7280; white-space: nowrap;">${edu.startDate} - ${edu.endDate}</span>
-              </div>
-              <p style="margin: 0; font-size: 15px; color: #374151;">${edu.school}</p>
-            </div>
-          `).join('')}
-        </section>
-        ` : ''}
-        
-        ${data.skills.length > 0 ? `
-        <section style="margin-bottom: 30px;">
-          <h2 style="font-size: 16px; font-weight: 600; color: #374151; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Skills</h2>
-          <p style="margin: 0; line-height: 1.6; color: #4b5563;">${data.skills.join(' • ')}</p>
-        </section>
-        ` : ''}
-        
-        ${data.projects && data.projects.length > 0 ? `
-        <section style="margin-bottom: 30px;">
-          <h2 style="font-size: 16px; font-weight: 600; color: #374151; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Projects</h2>
-          ${data.projects.filter(p => p.title || p.description).map(proj => `
-            <div style="margin-bottom: 20px;">
-              <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #111827;">${proj.title || 'Project'}</h3>
-              <p style="margin: 0 0 12px 0; line-height: 1.6; color: #4b5563;">${proj.description || ''}</p>
-              ${proj.bullets && proj.bullets.length > 0 ? `
-                <ul style="margin: 0; padding-left: 20px;">
-                  ${proj.bullets.filter(Boolean).map(bullet => `
-                    <li style="margin-bottom: 6px; line-height: 1.5; color: #4b5563;">${bullet}</li>
-                  `).join('')}
-                </ul>
-              ` : ''}
-            </div>
-          `).join('')}
-        </section>
-        ` : ''}
-      `;
-      
-      container.appendChild(resumeContent);
-      
-      // Wait for content to render
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      // Generate PDF from the rendered template
-      const resumeElement = container.firstElementChild as HTMLElement;
-      
-      // Get the actual height of the content
-      const totalHeight = resumeElement.scrollHeight;
-      const a4HeightMM = 297; // A4 height in mm
-      const a4HeightPx = 1123; // A4 height in pixels at 96 DPI
-      
-      // Calculate how many pages we need
-      const numPages = Math.ceil(totalHeight / a4HeightPx);
+      // Generate canvas with mobile optimizations
+      const canvas = await html2canvas(el as HTMLElement, {
+        scale,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        allowTaint: false,
+        foreignObjectRendering: false,
+        imageTimeout: 15000, // 15 seconds timeout for images
+      });
       
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      // Mobile-optimized scale to prevent memory issues
-      const scale = isMobile ? 1.2 : 2;
+      const imgData = canvas.toDataURL('image/png', 0.8); // Slightly lower quality for mobile/memory
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       
-      // Mobile-specific optimizations
-      const canvasOptions = {
-        scale, 
-        useCORS: true, 
-        backgroundColor: '#ffffff',
-        width: 794,
-        height: a4HeightPx,
-        logging: false,
-        removeContainer: false,
-        // Mobile-specific settings to reduce memory usage
-        allowTaint: false,
-        foreignObjectRendering: false,
-        imageTimeout: 15000, // 15 seconds timeout for images
-        onclone: (clonedDoc: Document) => {
-          // Remove problematic elements for mobile
-          const videos = clonedDoc.querySelectorAll('video');
-          videos.forEach(v => v.remove());
-        }
-      };
-      
-      for (let i = 0; i < numPages; i++) {
-        if (i > 0) {
-          pdf.addPage();
-        }
-        
-        // Calculate the source area for this page
-        const startY = i * a4HeightPx;
-        const height = Math.min(a4HeightPx, totalHeight - startY);
-        
-        // Create a temporary container for this page's content
-        const pageContainer = document.createElement('div');
-        pageContainer.style.position = 'absolute';
-        pageContainer.style.top = '-9999px';
-        pageContainer.style.left = '-9999px';
-        pageContainer.style.width = '21cm';
-        pageContainer.style.height = `${a4HeightPx}px`;
-        pageContainer.style.overflow = 'hidden';
-        pageContainer.style.backgroundColor = 'white';
-        
-        // Clone the resume element and offset it
-        const clonedElement = resumeElement.cloneNode(true) as HTMLElement;
-        clonedElement.style.transform = `translateY(-${startY}px)`;
-        pageContainer.appendChild(clonedElement);
-        document.body.appendChild(pageContainer);
-        
-        try {
-          // Generate canvas for this page with mobile optimizations
-          const canvas = await html2canvas(pageContainer, {
-            ...canvasOptions,
-            height: height
-          });
-          
-          // Add to PDF
-          const imgData = canvas.toDataURL('image/png', 0.8); // Slightly lower quality for mobile
-          pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-          
-          // Clean up canvas to free memory
-          canvas.width = 1;
-          canvas.height = 1;
-          
-        } catch (canvasError) {
-          console.error('Canvas generation error:', canvasError);
-          // Fallback: add a blank page with text
-          pdf.setFontSize(12);
-          pdf.text('Resume content could not be rendered on this device.', 20, 20);
-          pdf.text(`Page ${i + 1} of ${numPages}`, 20, 30);
-        }
-        
-        // Clean up page container to free memory
-        document.body.removeChild(pageContainer);
-        
-        // Small delay to allow garbage collection on mobile
-        if (isMobile && i < numPages - 1) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
-      }
-      
+      // Clean up canvas to free memory
+      canvas.width = 1;
+      canvas.height = 1;
+
       // Save PDF
       const filename = `resume-${data.personal?.fullName || 'resume'}-${Date.now()}.pdf`;
       pdf.save(filename);
-      
-      // Clean up
-      document.body.removeChild(container);
       
       // Also generate DOC file
       await generateDocFile(data);

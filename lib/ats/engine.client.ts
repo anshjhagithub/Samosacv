@@ -98,6 +98,10 @@ function scoreSkillMatch(userSkills: string[], targetRole: string): number {
   return (matchedSkills.length / requiredSkills.length) * 100;
 }
 
+function escapeRegExp(string: string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+}
+
 function scoreKeywordDensity(resumeText: string, targetRole: string): number {
   const intel = findRoleIntelligence(targetRole);
   if (!intel?.top_skills) return 0;
@@ -107,7 +111,8 @@ function scoreKeywordDensity(resumeText: string, targetRole: string): number {
   
   let keywordCount = 0;
   for (const keyword of keywords) {
-    const regex = new RegExp(keyword.toLowerCase(), 'gi');
+    const escapedKeyword = escapeRegExp(keyword.toLowerCase());
+    const regex = new RegExp(escapedKeyword, 'gi');
     const matches = lowerText.match(regex);
     keywordCount += matches ? matches.length : 0;
   }
