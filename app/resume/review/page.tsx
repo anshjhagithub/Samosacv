@@ -65,15 +65,14 @@ export default function ResumeReviewPage() {
       setGenerated(getGeneratedResult());
       setData(raw ? ensureProjects(raw) : null);
       
-      // Get resume ID from unlock preview
+      // Try multiple sources to find the resumeId
       const preview = getUnlockPreview();
-      if (preview) {
-        setResumeId(preview.resumeId);
-      }
+      const lsResumeId = typeof window !== 'undefined' ? localStorage.getItem('samosa_last_resume_id') : null;
+      const finalResumeId = preview?.resumeId || lsResumeId || null;
       
-      // Check if user has successful payment for download access
-      if (preview?.resumeId) {
-        checkPaymentStatus(preview.resumeId);
+      if (finalResumeId) {
+        setResumeId(finalResumeId);
+        checkPaymentAndAddons(finalResumeId);
       }
     } catch (e: any) {
       console.error("INIT ERROR:", e);
@@ -81,14 +80,32 @@ export default function ResumeReviewPage() {
     }
   }, []);
 
-  const checkPaymentStatus = async (resumeId: string) => {
+  const checkPaymentAndAddons = async (rid: string) => {
     try {
-      const res = await fetch(`/api/resume/download?resume_id=${resumeId}`);
+      // Step 1: Try to verify payment via the order_id if we have it
+      const lsOrderId = typeof window !== 'undefined' ? localStorage.getItem('samosa_last_order_id') : null;
+      
+      if (lsOrderId) {
+        // Force-verify with Cashfree to sync DB
+        try {
+          await fetch('/api/verify-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId: lsOrderId }),
+          });
+        } catch (e) {
+          console.error("Verify payment failed:", e);
+        }
+      }
+      
+      // Step 2: Check if the order is paid in DB
+      const res = await fetch(`/api/resume/download?resume_id=${rid}`);
       if (res.ok) {
         setHasPaymentSuccess(true);
-        // Also fetch order to get addons
+        
+        // Step 3: Fetch addons from the order
         try {
-          const orderRes = await fetch(`/api/get-order?resume_id=${resumeId}`);
+          const orderRes = await fetch(`/api/get-order?resume_id=${rid}`);
           if (orderRes.ok) {
             const orderData = await orderRes.json();
             const lineItems = orderData.line_items || {};
@@ -98,7 +115,25 @@ export default function ResumeReviewPage() {
             setPurchasedAddons(addons);
           }
         } catch (e) {
-          console.error("Failed to fetch addons", e);
+          console.error("Failed to fetch addons:", e);
+        }
+        
+        // Also check localStorage cart as backup
+        if (purchasedAddons.length === 0) {
+          try {
+            const cartStr = typeof window !== 'undefined' ? localStorage.getItem('samosa_last_cart') : null;
+            if (cartStr) {
+              const cart = JSON.parse(cartStr);
+              const addons = Object.entries(cart)
+                .filter(([slug, purchased]) => purchased === true && slug !== 'resume_pdf')
+                .map(([slug]) => slug);
+              if (addons.length > 0) {
+                setPurchasedAddons(addons);
+              }
+            }
+          } catch (e) {
+            console.error("Failed to parse cart from localStorage:", e);
+          }
         }
       } else if (res.status === 402) {
         setHasPaymentSuccess(false);
@@ -428,45 +463,79 @@ export default function ResumeReviewPage() {
         throw new Error("Could not find resume preview on screen to export DOC");
       }
       
-      const clone = el.cloneNode(true) as HTMLElement;
+      const html2canvas = (await import('html2canvas-pro')).default;
+      const { Document, Packer, Paragraph, ImageRun, PageBreak } = await import('docx');
       
-      // Get all current stylesheets from document head to preserve styling
-      const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
-        .map(styleEl => styleEl.outerHTML)
-        .join('\n');
-        
-      const htmlContent = `
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<style>
-${styles}
-</style>
-</head>
-<body>
-${clone.outerHTML}
-</body>
-</html>
-`;
-
-      const response = await fetch('/api/generate-docx', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          html: htmlContent,
-          filename: `resume-${resumeData.personal?.fullName || 'resume'}-${Date.now()}.docx`
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate DOCX file');
+      const isMobile = isMobileDevice();
+      let targetEl = el as HTMLElement;
+      let wrapper: HTMLDivElement | null = null;
+      
+      if (isMobile) {
+        wrapper = document.createElement('div');
+        wrapper.style.position = 'absolute';
+        wrapper.style.top = '-9999px';
+        wrapper.style.left = '-9999px';
+        wrapper.style.width = '794px';
+        wrapper.style.backgroundColor = 'white';
+        const clone = el.cloneNode(true) as HTMLElement;
+        wrapper.appendChild(clone);
+        document.body.appendChild(wrapper);
+        targetEl = clone;
+        await new Promise(r => setTimeout(r, 50));
       }
-
-      const blob = await response.blob();
       
-      const url = URL.createObjectURL(blob);
+      const scale = isMobile ? 1.5 : 2;
+      const canvas = await html2canvas(targetEl, {
+        scale,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        allowTaint: false,
+        foreignObjectRendering: false,
+        imageTimeout: 15000,
+      });
+      
+      if (wrapper && wrapper.parentNode) {
+        wrapper.parentNode.removeChild(wrapper);
+      }
+      
+      // Convert canvas to blob
+      const imgBlob: Blob = await new Promise((resolve) => {
+        canvas.toBlob((blob) => resolve(blob!), 'image/png');
+      });
+      const imgBuffer = await imgBlob.arrayBuffer();
+      
+      // A4 dimensions in EMUs (English Metric Units): 1 inch = 914400 EMUs
+      // A4 = 8.27 x 11.69 inches, with 0.5 inch margins = 7.27 x 10.69 inches
+      const pageWidthEmu = Math.round(7.27 * 914400);
+      const pageHeightEmu = Math.round(10.69 * 914400);
+      
+      const doc = new Document({
+        sections: [{
+          properties: {
+            page: {
+              margin: { top: 457200, bottom: 457200, left: 457200, right: 457200 }, // 0.5 inch
+            }
+          },
+          children: [
+            new Paragraph({
+              children: [
+                new ImageRun({
+                  data: imgBuffer,
+                  transformation: {
+                    width: pageWidthEmu / 914400 * 72, // convert to points for docx lib
+                    height: pageHeightEmu / 914400 * 72,
+                  },
+                }),
+              ],
+            }),
+          ],
+        }],
+      });
+      
+      const docxBlob = await Packer.toBlob(doc);
+      
+      const url = URL.createObjectURL(docxBlob);
       const link = document.createElement('a');
       link.href = url;
       link.download = `resume-${resumeData.personal?.fullName || 'resume'}-${Date.now()}.docx`;
@@ -475,6 +544,9 @@ ${clone.outerHTML}
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
       
+      // Clean up canvas
+      canvas.width = 1;
+      canvas.height = 1;
       
     } catch (error) {
       console.error('DOC generation error:', error);

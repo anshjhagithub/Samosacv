@@ -53,6 +53,7 @@ function PaymentStatusContent() {
       // Set a flag in localStorage to indicate payment was successful for this order
       if (typeof window !== "undefined") {
         localStorage.setItem(`payment_success_${orderId}`, "true");
+        localStorage.setItem("samosa_last_order_id", orderId);
       }
     }
   }, [status, orderId, returnTo]);

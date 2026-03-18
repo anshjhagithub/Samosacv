@@ -113,6 +113,12 @@ export default function UnlockPage() {
       if (!res.ok) { setPayError(data.error ?? "Failed to create order"); return; }
       const sessionId = data.payment_session_id;
       if (!sessionId) { setPayError("No payment session received"); return; }
+      
+      // Persist order info in localStorage so review page can find it after redirect
+      localStorage.setItem("samosa_last_order_id", data.order_id);
+      localStorage.setItem("samosa_last_resume_id", preview.resumeId);
+      localStorage.setItem("samosa_last_cart", JSON.stringify(cart));
+      
       await openCashfreeCheckout(sessionId);
       router.push("/payment-status?order_id=" + encodeURIComponent(data.order_id));
     } catch (e) {
