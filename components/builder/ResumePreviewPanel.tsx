@@ -18,6 +18,15 @@ interface ResumePreviewPanelProps {
   purchasedAddons?: FeatureSlug[];
 }
 
+const ADDON_LABELS: Record<string, string> = {
+  ats_breakdown: "Full ATS Breakdown",
+  ats_improver: "ATS Improver",
+  skill_roadmap: "Skill Roadmap",
+  linkedin_optimizer: "LinkedIn Optimizer",
+  cover_letter: "Cover Letter",
+  interview_pack: "Interview Pack",
+};
+
 export function ResumePreviewPanel({ data, onTemplateChange, onDownload, toolbarExtra, isPaid = false, purchasedAddons = [] }: ResumePreviewPanelProps) {
   const [zoom, setZoom] = useState(80);
   const [showTemplates, setShowTemplates] = useState(false);
@@ -66,11 +75,13 @@ export function ResumePreviewPanel({ data, onTemplateChange, onDownload, toolbar
           const html2canvas = html2pdfModule.default;
           const jsPDF = jsPDFModule.default;
 
-          // Create a hidden container to render the addons DOM
+          // Create a hidden container to render the addons DOM reliably
           const container = document.createElement('div');
           container.style.position = 'absolute';
-          container.style.top = '-9999px';
+          container.style.top = '0';
           container.style.left = '-9999px';
+          container.style.width = '794px'; // Fixed A4 width
+          container.style.backgroundColor = '#ffffff';
           document.body.appendChild(container);
 
           // Give it some React context
@@ -103,12 +114,29 @@ export function ResumePreviewPanel({ data, onTemplateChange, onDownload, toolbar
         const el = previewRef.current?.querySelector(".resume-pdf-source");
         if (el) {
           const html2canvas = (await import("html2canvas-pro")).default;
-          const canvas = await html2canvas(el as HTMLElement, { scale: 2, useCORS: true });
+          // Clone exactly as we do in review page to avoid kerning issues
+          const wrapper = document.createElement('div');
+          wrapper.style.position = 'absolute';
+          wrapper.style.top = '0';
+          wrapper.style.left = '-9999px';
+          wrapper.style.width = '794px';
+          wrapper.style.backgroundColor = '#ffffff';
+          
+          const clone = (el as HTMLElement).cloneNode(true) as HTMLElement;
+          clone.style.transform = 'none';
+          clone.style.width = '100%';
+          clone.style.height = 'auto';
+          wrapper.appendChild(clone);
+          document.body.appendChild(wrapper);
+
+          const canvas = await html2canvas(wrapper, { scale: 2, useCORS: true, logging: false });
+          document.body.removeChild(wrapper);
+
           const jsPDF = (await import("jspdf")).default;
           const pdf = new jsPDF("p", "mm", "a4");
           const pdfWidth = pdf.internal.pageSize.getWidth();
           const pdfHeight = pdf.internal.pageSize.getHeight();
-          pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, pdfWidth, pdfHeight);
+          pdf.addImage(canvas.toDataURL("image/png", 0.8), "PNG", 0, 0, pdfWidth, pdfHeight);
           pdf.save(`resume-${data.personal?.fullName || "resume"}.pdf`);
         }
         
@@ -130,10 +158,25 @@ export function ResumePreviewPanel({ data, onTemplateChange, onDownload, toolbar
     const el = previewRef.current?.querySelector(".resume-pdf-source");
     if (!el) return;
     import("html2canvas-pro").then(({ default: html2canvas }) => {
-      html2canvas(el as HTMLElement, { scale: 2, useCORS: true }).then((canvas) => {
+      const wrapper = document.createElement('div');
+      wrapper.style.position = 'absolute';
+      wrapper.style.top = '0';
+      wrapper.style.left = '-9999px';
+      wrapper.style.width = '794px';
+      wrapper.style.backgroundColor = '#ffffff';
+      
+      const clone = (el as HTMLElement).cloneNode(true) as HTMLElement;
+      clone.style.transform = 'none';
+      clone.style.width = '100%';
+      clone.style.height = 'auto';
+      wrapper.appendChild(clone);
+      document.body.appendChild(wrapper);
+
+      html2canvas(wrapper, { scale: 2, useCORS: true, logging: false }).then((canvas) => {
+        document.body.removeChild(wrapper);
         import("jspdf").then(({ default: jsPDF }) => {
           const pdf = new jsPDF("p", "mm", "a4");
-          pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, 210, 297);
+          pdf.addImage(canvas.toDataURL("image/png", 0.8), "PNG", 0, 0, 210, 297);
           pdf.save(`resume-${data.personal?.fullName || "resume"}.pdf`);
         });
       });
@@ -175,6 +218,17 @@ export function ResumePreviewPanel({ data, onTemplateChange, onDownload, toolbar
                 {generationStep === "pdf" && "Rendering high-quality pixel-perfect PDFs..."}
                 {generationStep === "done" && "Check your downloads folder."}
               </p>
+
+              {purchasedAddons.length > 0 && generationStep !== "done" && (
+                <div className="mb-6 bg-amber-50 rounded-lg p-3 border border-amber-100/50">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-amber-800 mb-1.5 opacity-80">Included in your download</p>
+                  <div className="flex flex-wrap justify-center gap-1.5">
+                    {purchasedAddons.map(s => (
+                      <span key={s} className="px-2 py-0.5 bg-white text-xs font-medium text-amber-700 rounded-md border border-amber-200/60 shadow-sm">{ADDON_LABELS[s] || s}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
               
               {/* Progress Bar */}
               <div className="h-2 w-full bg-stone-100 rounded-full overflow-hidden">

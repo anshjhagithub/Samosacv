@@ -72,7 +72,25 @@ export default function UnlockPage() {
   const router = useRouter();
   const [resume, setResume] = useState<ResumeData | null>(null);
   const [preview, setPreview] = useState<{ resumeId: string; atsScore: number; missingSkills: string[]; targetRole?: string } | null>(null);
-  const [cart, setCart] = useState(() => getDefaultCart());
+  const [cart, setCart] = useState(() => {
+    const base = getDefaultCart();
+    // Read persisted addon selections from builder
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('samosa_builder_addon_cart');
+        if (raw) {
+          const builderCart = JSON.parse(raw);
+          // Merge builder selections into default cart
+          for (const [slug, selected] of Object.entries(builderCart)) {
+            if (selected) base[slug as FeatureSlug] = true;
+          }
+          // Clear it so it doesn't persist across sessions
+          localStorage.removeItem('samosa_builder_addon_cart');
+        }
+      } catch {}
+    }
+    return base;
+  });
   const [payLoading, setPayLoading] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
   const [expandedAddon, setExpandedAddon] = useState<string | null>(null);

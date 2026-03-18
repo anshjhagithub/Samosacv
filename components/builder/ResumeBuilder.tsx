@@ -77,9 +77,16 @@ export function ResumeBuilder({ data, onUpdate }: ResumeBuilderProps) {
   const [isPaid, setIsPaid] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
   const [purchasedAddons, setPurchasedAddons] = useState<FeatureSlug[]>([]);
+  const [addonCart, setAddonCart] = useState<Partial<Record<FeatureSlug, boolean>>>({});
   const handleDownloadResume = useCallback(() => {
+    // Persist builder addon selections so the unlock page can pre-select them
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('samosa_builder_addon_cart', JSON.stringify(addonCart));
+      } catch {}
+    }
     router.push("/unlock");
-  }, [router]);
+  }, [router, addonCart]);
   const [improvingSummary, setImprovingSummary] = useState(false);
   const [newSkill, setNewSkill] = useState("");
   const [regenCredits, setRegenCredits] = useState(0);
@@ -88,7 +95,6 @@ export function ResumeBuilder({ data, onUpdate }: ResumeBuilderProps) {
   const [regenPayLoading, setRegenPayLoading] = useState(false);
   const [summaryImproveCredits, setSummaryImproveCredits] = useState(0);
   const [projectImproveCredits, setProjectImproveCredits] = useState(0);
-  const [addonCart, setAddonCart] = useState<Partial<Record<FeatureSlug, boolean>>>({});
   const [improveUnlimited, setImproveUnlimited] = useState(false);
   const [improvePayLoading, setImprovePayLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);

@@ -8,6 +8,7 @@ import { generateObject } from "ai";
 import { getModel, resolveModelOptions } from "./model";
 import { getResumePatternsPrompt } from "./resumePatterns";
 import { extractedResumeSchema } from "@/lib/validation/resumeSchema";
+import { scoreResume, findRoleIntelligence } from "@/lib/ats/engine";
 import type { ResumeData } from "@/types/resume";
 import {
   createEmptyResume,
@@ -74,6 +75,13 @@ export async function generateFromMinimal(params: GenerateFromMinimalInput): Pro
           ? "3-6 years"
           : "6+ years";
 
+  // Pre-fetch role intelligence to fine-tune the LLM generation
+  const roleIntel = typeof targetRole === 'string' && targetRole.trim() 
+    ? findRoleIntelligence(targetRole) 
+    : null;
+  const topSkillsText = roleIntel?.top_skills?.slice(0, 15).map((s: any) => s.skill).join(", ") || "";
+  const powerVerbsText = roleIntel?.action_verbs?.slice(0, 15).join(", ") || "";
+
   const expBlock =
     experiences.length > 0
       ? experiences
@@ -118,6 +126,7 @@ Projects (and optional one-line description):
 ${projBlock}
 ${jobDescription ? `\n--- JOB DESCRIPTION (tailor resume to this) ---\n${jobDescription.slice(0, 8000)}` : ""}
 
+${topSkillsText || powerVerbsText ? `--- ROLE INTELLIGENCE FINE-TUNING ---\nUse these exact industry keywords to score >90+ on ATS systems:\nTop Skills to Embed: ${topSkillsText}\nHigh-Impact Action Verbs to Start Bullets With: ${powerVerbsText}\n` : ""}
 --- INSTRUCTIONS ---
 1. Set personal.fullName to "${fullName}", personal.title to a professional title matching "${targetRole}", and personal.location to "${location || ""}".
 2. Write a professional summary (2-4 sentences) for someone targeting "${targetRole}" with ${levelLabel} experience.

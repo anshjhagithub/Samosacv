@@ -387,8 +387,10 @@ export default function ResumeReviewPage() {
           // Create a hidden container to render the addons DOM
           const container = document.createElement('div');
           container.style.position = 'absolute';
-          container.style.top = '-9999px';
+          container.style.top = '0';
           container.style.left = '-9999px';
+          container.style.width = '794px';
+          container.style.backgroundColor = '#ffffff';
           document.body.appendChild(container);
 
           // Give it some React context
