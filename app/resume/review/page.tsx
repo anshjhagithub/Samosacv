@@ -248,22 +248,25 @@ export default function ResumeReviewPage() {
       let targetEl = el as HTMLElement;
       let wrapper: HTMLDivElement | null = null;
       
-      if (isMobile) {
-        // Clone into a fixed width container to avoid mobile text scaling bugs
-        wrapper = document.createElement('div');
-        wrapper.style.position = 'absolute';
-        wrapper.style.top = '-9999px';
-        wrapper.style.left = '-9999px';
-        wrapper.style.width = '794px'; // ~A4 width
-        wrapper.style.backgroundColor = 'white';
-        const clone = el.cloneNode(true) as HTMLElement;
-        wrapper.appendChild(clone);
-        document.body.appendChild(wrapper);
-        targetEl = clone;
-        
-        // Wait a small tick to let css apply to the cloned node
-        await new Promise(r => setTimeout(r, 50));
-      }
+      // Always clone into a fixed width container (A4) to avoid text scaling/kerning bugs with html2canvas (e.g., text bunching up)
+      wrapper = document.createElement('div');
+      wrapper.style.position = 'absolute';
+      wrapper.style.top = '-9999px';
+      wrapper.style.left = '-9999px';
+      wrapper.style.width = '794px'; // ~A4 width
+      wrapper.style.backgroundColor = 'white';
+      
+      const clone = el.cloneNode(true) as HTMLElement;
+      // Remove any inline scaling that might have been copied
+      clone.style.transform = 'none';
+      clone.style.transformOrigin = 'unset';
+      
+      wrapper.appendChild(clone);
+      document.body.appendChild(wrapper);
+      targetEl = clone;
+      
+      // Wait a small tick to let css apply to the cloned node and fonts to settle
+      await new Promise(r => setTimeout(r, 100));
       
       const scale = isMobile ? 1.5 : 2;
 
@@ -336,37 +339,16 @@ export default function ResumeReviewPage() {
 
   const generateAddons = async (resumeData: ResumeData) => {
     try {
-      // Check if user has paid for add-ons by checking the order
+      // Instead of duplicating the entire order fetching logic here and potentially
+      // failing if the DB isn't synced, we simply trust the `purchasedAddons` React state
+      // that we already populated in `checkPaymentAndAddons` using multiple fallbacks.
+      if (!purchasedAddons || purchasedAddons.length === 0) {
+        console.log('No add-ons purchased (or state is empty)');
+        return;
+      }
+      
+      console.log('Generating following purchased add-ons:', purchasedAddons);
       const preview = getUnlockPreview();
-      if (!preview?.resumeId) {
-        console.log('No resume ID found for add-on generation');
-        return;
-      }
-      
-      // Get order details to see which add-ons were purchased
-      const orderRes = await fetch(`/api/get-order?resume_id=${preview.resumeId}`);
-      if (!orderRes.ok) {
-        console.log('Order not found or not paid');
-        return;
-      }
-      
-      const orderData = await orderRes.json();
-      const lineItems = orderData.line_items || {};
-      
-      // Debug log
-      console.log('Order line items:', lineItems);
-      
-      // Filter to purchased add-ons (excluding resume_pdf)
-      const purchasedAddons = Object.entries(lineItems)
-        .filter(([slug, purchased]) => purchased === true && slug !== 'resume_pdf')
-        .map(([slug]) => slug);
-      
-      console.log('Purchased add-ons:', purchasedAddons);
-      
-      if (purchasedAddons.length === 0) {
-        console.log('No add-ons purchased');
-        return;
-      }
       
       // Generate resume text for addon generation
       const resumeText = JSON.stringify(resumeData); // Sending full plain data since API expects JSON string often or just plain text
@@ -377,7 +359,7 @@ export default function ResumeReviewPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           resumeText: resumeText,
-          targetRole: preview.targetRole || resumeData.personal?.title || 'Professional',
+          targetRole: preview?.targetRole || resumeData.personal?.title || 'Professional',
           addons: purchasedAddons
         })
       });
@@ -470,19 +452,22 @@ export default function ResumeReviewPage() {
       let targetEl = el as HTMLElement;
       let wrapper: HTMLDivElement | null = null;
       
-      if (isMobile) {
-        wrapper = document.createElement('div');
-        wrapper.style.position = 'absolute';
-        wrapper.style.top = '-9999px';
-        wrapper.style.left = '-9999px';
-        wrapper.style.width = '794px';
-        wrapper.style.backgroundColor = 'white';
-        const clone = el.cloneNode(true) as HTMLElement;
-        wrapper.appendChild(clone);
-        document.body.appendChild(wrapper);
-        targetEl = clone;
-        await new Promise(r => setTimeout(r, 50));
-      }
+      // Always clone so html2canvas doesn't try to render scaled elements, causing squished text
+      wrapper = document.createElement('div');
+      wrapper.style.position = 'absolute';
+      wrapper.style.top = '-9999px';
+      wrapper.style.left = '-9999px';
+      wrapper.style.width = '794px';
+      wrapper.style.backgroundColor = 'white';
+      
+      const clone = el.cloneNode(true) as HTMLElement;
+      clone.style.transform = 'none';
+      clone.style.transformOrigin = 'unset';
+      
+      wrapper.appendChild(clone);
+      document.body.appendChild(wrapper);
+      targetEl = clone;
+      await new Promise(r => setTimeout(r, 100));
       
       const scale = isMobile ? 1.5 : 2;
       const canvas = await html2canvas(targetEl, {
@@ -583,22 +568,25 @@ export default function ResumeReviewPage() {
       let targetEl = el as HTMLElement;
       let wrapper: HTMLDivElement | null = null;
       
-      if (isMobile) {
-        // Clone into a fixed width container to avoid mobile text scaling bugs
-        wrapper = document.createElement('div');
-        wrapper.style.position = 'absolute';
-        wrapper.style.top = '-9999px';
-        wrapper.style.left = '-9999px';
-        wrapper.style.width = '794px'; // ~A4 width
-        wrapper.style.backgroundColor = 'white';
-        const clone = el.cloneNode(true) as HTMLElement;
-        wrapper.appendChild(clone);
-        document.body.appendChild(wrapper);
-        targetEl = clone;
-        
-        // Wait a small tick to let css apply to the cloned node
-        await new Promise(r => setTimeout(r, 50));
-      }
+      // Always clone into a fixed width container (A4) to avoid text scaling/kerning bugs with html2canvas (e.g., text bunching up)
+      wrapper = document.createElement('div');
+      wrapper.style.position = 'absolute';
+      wrapper.style.top = '-9999px';
+      wrapper.style.left = '-9999px';
+      wrapper.style.width = '794px'; // ~A4 width
+      wrapper.style.backgroundColor = 'white';
+      
+      const clone = el.cloneNode(true) as HTMLElement;
+      // Remove any inline scaling that might have been copied
+      clone.style.transform = 'none';
+      clone.style.transformOrigin = 'unset';
+      
+      wrapper.appendChild(clone);
+      document.body.appendChild(wrapper);
+      targetEl = clone;
+      
+      // Wait a small tick to let css apply to the cloned node and fonts to settle
+      await new Promise(r => setTimeout(r, 100));
       
       const scale = isMobile ? 1.5 : 2;
 
