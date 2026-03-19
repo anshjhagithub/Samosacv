@@ -5,7 +5,7 @@ import type { FeatureSlug } from "@/lib/pricing";
 import { getGuestUserId } from "@/lib/guestUser";
 
 function getSupabaseAdmin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const url = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL)?.trim();
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   if (!url || !key) return null;
   return createAdminClient(url, key);
