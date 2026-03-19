@@ -40,9 +40,12 @@ const FEATURES = [
   { title: "AI writes for you", desc: "One-click impact-driven bullets.", tag: "AI", color: "amber" },
   { title: "ATS optimization", desc: "Keyword matching, format checks, readability.", tag: "ATS", color: "emerald" },
   { title: "Job description match", desc: "Paste a posting, get a tailored resume.", tag: "Tailor", color: "sky" },
-  { title: "Instant improvements", desc: "Vague \u2192 quantified in one click.", tag: "AI", color: "amber" },
+  { title: "Instant improvements", desc: "Vague → quantified in one click.", tag: "AI", color: "amber" },
   { title: "Role-specific models", desc: "Trained on top placements in your field.", tag: "AI", color: "violet" },
   { title: "35+ pro templates", desc: "ATS-tested, recruiter-approved designs.", tag: "Design", color: "rose" },
+  { title: "AI-powered resume building", desc: "Get a professionally-written resume in minutes.", tag: "AI", color: "amber" },
+  { title: "Keyword extraction", desc: "Automatically extract relevant keywords from job postings.", tag: "ATS", color: "emerald" },
+  { title: "Resume analytics", desc: "Get insights into your resume's performance and areas for improvement.", tag: "Analytics", color: "blue" },
 ];
 
 const TESTIMONIALS = [
@@ -233,49 +236,201 @@ export default function Home() {
 
       <main className="relative">
         {/* ═══ HERO ═══ */}
-        <section ref={heroRef} className="relative overflow-hidden">
+        <section ref={heroRef} className="relative min-h-screen flex items-center overflow-hidden bg-gradient-to-br from-slate-50 via-white to-amber-50/30">
+          {/* Premium Background Elements */}
           <div className="absolute inset-0 pointer-events-none" aria-hidden>
-            <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-bl from-amber-200/30 via-amber-100/15 to-transparent rounded-full blur-3xl" />
-            <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-orange-100/20 via-amber-50/10 to-transparent rounded-full blur-3xl" />
+            <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-br from-amber-300/20 via-amber-200/10 to-transparent rounded-full blur-3xl" />
+            <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-gradient-to-tr from-blue-200/15 via-slate-100/10 to-transparent rounded-full blur-3xl" />
+            <div className="absolute top-1/2 left-1/2 w-[400px] h-[400px] bg-gradient-to-r from-emerald-200/10 to-sky-200/10 rounded-full blur-3xl" />
+            
+            {/* Subtle grid pattern */}
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="%239CA3AF" fill-opacity="0.03"%3E%3Cpath d="M0 40L40 0H20L0 20M40 40V20L20 40"/%3E%3C/g%3E%3C/svg%3E')] opacity-30" />
           </div>
 
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-14 sm:pt-20 pb-10">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-6 items-center">
-              <motion.div variants={stagger} initial="hidden" animate="show">
-                <motion.div variants={fadeUp} className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-white/80 backdrop-blur-sm px-4 py-1.5 mb-5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                  <span className="text-xs text-amber-800 font-semibold">&#x20B9;15 per resume &middot; No subscription</span>
-                </motion.div>
-                <motion.h1 variants={fadeUp} className="text-3xl sm:text-4xl lg:text-[3.25rem] font-bold text-stone-900 tracking-tight leading-[1.15]">
-                  AI resume in 60 seconds. <span className="text-amber-700">Just &#x20B9;15.</span>
-                </motion.h1>
-                <motion.p variants={fadeUp} className="mt-4 text-stone-600 max-w-md text-base sm:text-lg leading-relaxed">
-                  Enter your name and target role. AI handles the rest. Free ATS scoring, skill analysis, and 82 role presets included.
-                </motion.p>
-                <motion.div variants={fadeUp} className="mt-7 flex flex-wrap items-center gap-3">
-                  <Link href="/create" className="touch-target relative inline-flex items-center justify-center rounded-xl bg-amber-600 px-7 py-3.5 min-h-[48px] text-sm font-semibold text-white shadow-lg shadow-amber-900/20 hover:bg-amber-700 transition-all hover:-translate-y-0.5 btn-shine overflow-hidden">
-                    Create my resume &mdash; &#x20B9;15
-                  </Link>
-                  <a href="#free-features" className="touch-target inline-flex items-center justify-center rounded-xl border-2 border-emerald-300 bg-emerald-50/80 px-7 py-3.5 min-h-[48px] text-sm font-medium text-emerald-800 hover:bg-emerald-100 transition-all">
-                    What&apos;s free?
-                  </a>
-                </motion.div>
-                <motion.div variants={fadeUp} className="mt-6 flex items-center gap-4">
-                  <div className="flex -space-x-2">
-                    {TESTIMONIALS.slice(0, 6).map((t, i) => (
-                      <div key={i} className="w-8 h-8 rounded-full border-2 border-white overflow-hidden shadow-sm flex-shrink-0">
-                        <Image src={t.image} alt="" width={36} height={36} sizes="36px" className="w-full h-full object-cover" priority={i === 0} />
-                      </div>
-                    ))}
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-20">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-12 items-center">
+              {/* Left Content */}
+              <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-8">
+                {/* Premium Badge */}
+                <motion.div variants={fadeUp} className="inline-flex items-center gap-3 rounded-full border border-amber-200/60 bg-gradient-to-r from-amber-50 to-orange-50 px-6 py-3 shadow-lg backdrop-blur-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                    <span className="text-sm text-amber-800 font-semibold">TRUSTED BY 50,000+ PROFESSIONALS</span>
                   </div>
-                  <div>
-                    <div className="flex items-center gap-0.5 text-amber-500 text-xs">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                    <p className="text-xs text-stone-500">4.9/5 &middot; 50K+ users</p>
+                  <div className="h-4 w-px bg-amber-300" />
+                  <span className="text-sm text-amber-700 font-medium">4.9/5 Rating</span>
+                </motion.div>
+
+                {/* Premium Headline */}
+                <motion.div variants={fadeUp} className="space-y-4">
+                  <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 tracking-tight leading-[1.1]">
+                    Your Dream Job
+                    <br />
+                    <span className="bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent"> Starts Here</span>
+                  </h1>
+                  <motion.div variants={fadeUp} className="flex items-center gap-4 text-slate-600">
+                    <div className="flex items-center gap-2">
+                      <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      <span className="font-semibold">AI-Powered</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="font-semibold">ATS Optimized</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="font-semibold">Just ₹15</span>
+                    </div>
+                  </motion.div>
+                </motion.div>
+
+                {/* Premium Description */}
+                <motion.p variants={fadeUp} className="text-lg sm:text-xl text-slate-600 leading-relaxed max-w-lg">
+                  Join thousands who landed their dream jobs. Professional resume in 60 seconds with AI that understands your industry.
+                </motion.p>
+
+                {/* Premium CTA */}
+                <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                  <Link 
+                    href="/create" 
+                    className="group relative inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 px-8 py-4 text-base font-semibold text-white shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1 overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-amber-700 to-orange-700 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <span className="relative flex items-center gap-2">
+                      Create Professional Resume
+                      <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                      </svg>
+                    </span>
+                  </Link>
+                  
+                  <div className="flex items-center gap-3 text-sm text-slate-600">
+                    <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>No subscription required</span>
+                  </div>
+                </motion.div>
+
+                {/* Social Proof */}
+                <motion.div variants={fadeUp} className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
+                  <div className="flex items-center gap-6">
+                    <div className="flex -space-x-3">
+                      {TESTIMONIALS.slice(0, 5).map((t, i) => (
+                        <motion.div 
+                          key={i} 
+                          className="w-10 h-10 rounded-full border-2 border-white overflow-hidden shadow-md flex-shrink-0"
+                          whileHover={{ scale: 1.1, zIndex: 10 }}
+                        >
+                          <Image src={t.image} alt="" width={40} height={40} sizes="40px" className="w-full h-full object-cover" priority={i === 0} />
+                        </motion.div>
+                      ))}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-1 mb-1">
+                        {[...Array(5)].map((_, i) => (
+                          <svg key={i} className="w-4 h-4 text-amber-400 fill-current" viewBox="0 0 20 20">
+                            <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                          </svg>
+                        ))}
+                      </div>
+                      <p className="text-sm font-semibold text-slate-900">50,000+ Success Stories</p>
+                      <p className="text-xs text-slate-600">FAANG, Startups, Fortune 500</p>
+                    </div>
                   </div>
                 </motion.div>
               </motion.div>
-              <motion.div className="hidden lg:block" style={{ y: heroParallax }}>
-                <FloatingResume />
+
+              {/* Right - Premium Visual */}
+              <motion.div className="relative" style={{ y: heroParallax }}>
+                <div className="relative">
+                  {/* Glow effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 to-orange-400/20 rounded-3xl blur-3xl" />
+                  
+                  {/* Main floating resume */}
+                  <div className="relative bg-white rounded-3xl shadow-2xl border border-white/20 overflow-hidden">
+                    <div className="bg-gradient-to-r from-amber-600 to-orange-600 px-6 py-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <h3 className="text-white font-semibold">Professional Resume</h3>
+                            <p className="text-white/80 text-sm">AI-Optimized • ATS-Ready</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="px-3 py-1 bg-white/20 rounded-full text-xs text-white font-medium">
+                            96% ATS Score
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="p-6 space-y-4">
+                      <div className="space-y-3">
+                        <div className="h-3 bg-slate-200 rounded-full w-3/4" />
+                        <div className="h-3 bg-slate-200 rounded-full w-full" />
+                        <div className="h-3 bg-slate-200 rounded-full w-2/3" />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 bg-emerald-500 rounded-full" />
+                          <div className="h-2 bg-slate-200 rounded-full flex-1" />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 bg-emerald-500 rounded-full" />
+                          <div className="h-2 bg-slate-200 rounded-full flex-1" />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 bg-emerald-500 rounded-full" />
+                          <div className="h-2 bg-slate-200 rounded-full flex-1" />
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between pt-4 border-t border-slate-200">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 bg-amber-500 rounded-full" />
+                          <div className="text-sm font-semibold text-slate-900">AI Generated</div>
+                        </div>
+                        <div className="text-sm text-emerald-600 font-medium">Ready to Download</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Floating badges */}
+                  <motion.div 
+                    className="absolute -top-4 -right-4 bg-gradient-to-r from-emerald-500 to-sky-500 text-white px-4 py-2 rounded-full shadow-lg text-sm font-semibold"
+                    animate={{ 
+                      scale: [1, 1.05, 1],
+                      rotate: [0, 2, -2, 0]
+                    }}
+                    transition={{ duration: 3, repeat: Infinity }}
+                  >
+                    AI Powered
+                  </motion.div>
+                  
+                  <motion.div 
+                    className="absolute -bottom-4 -left-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 rounded-full shadow-lg text-sm font-semibold"
+                    animate={{ 
+                      scale: [1, 1.05, 1],
+                      rotate: [0, -2, 2, 0]
+                    }}
+                    transition={{ duration: 3, repeat: Infinity, delay: 1.5 }}
+                  >
+                    Just ₹15
+                  </motion.div>
+                </div>
               </motion.div>
             </div>
           </div>
@@ -287,79 +442,250 @@ export default function Home() {
           <LogoTicker />
         </section>
 
-        {/* ═══ 3 USPs ═══ */}
-        <section className="py-16 sm:py-20">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6">
-            <div className="text-center mb-12">
-              <motion.p className="text-amber-700 text-xs font-semibold uppercase tracking-widest mb-2" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>Why Samosa CV</motion.p>
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-stone-900">Three reasons you will never find a better deal</h2>
-            </div>
+        {/* ═══ PREMIUM USPs ═══ */}
+        <section className="py-20 sm:py-24 bg-gradient-to-b from-white to-slate-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            <motion.div 
+              className="text-center mb-16"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-800 rounded-full text-sm font-semibold mb-4">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Why Professionals Choose Samosa CV
+              </div>
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
+                The Smartest Way to
+                <span className="bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent"> Build Your Career</span>
+              </h2>
+              <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+                Join thousands who've transformed their job search with our AI-powered approach
+              </p>
+            </motion.div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* USP 1: Price */}
-              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0 }} className="relative group">
-                <TiltCard className="h-full perspective-1000">
-                  <div className="h-full rounded-2xl border-2 border-amber-200 bg-gradient-to-br from-amber-50 via-white to-amber-50/30 p-6 sm:p-8 shadow-lg hover:shadow-xl hover:border-amber-300 transition-all">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center mb-5 shadow-md shadow-amber-500/30">
-                      <span className="text-2xl font-black text-white">&#x20B9;</span>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* USP 1: Unbeatable Price */}
+              <motion.div 
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0 }}
+                className="group"
+              >
+                <div className="relative h-full">
+                  {/* Glow effect */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-amber-400/20 to-orange-400/20 rounded-3xl blur-xl group-hover:blur-2xl transition-all" />
+                  
+                  <div className="relative bg-white rounded-3xl p-8 shadow-xl border border-amber-100/50 hover:shadow-2xl transition-all">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center mb-6 shadow-lg">
+                      <span className="text-3xl font-black text-white">₹</span>
                     </div>
-                    <h3 className="text-xl font-bold text-stone-900 mb-2">&#x20B9;15. No subscription.</h3>
-                    <p className="text-stone-600 text-sm leading-relaxed mb-4">Others charge &#x20B9;500+/month for AI resumes. We charge &#x20B9;15. Once. No recurring fees. No hidden charges. No trial that expires.</p>
-                    <div className="flex items-center gap-3 pt-4 border-t border-amber-200/50">
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-4xl font-black text-amber-700">&#x20B9;15</span>
-                        <span className="text-stone-500 text-sm line-through">&#x20B9;500</span>
-                      </div>
-                      <span className="ml-auto inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">99% cheaper</span>
-                    </div>
-                  </div>
-                </TiltCard>
-              </motion.div>
-
-              {/* USP 2: Minimal input */}
-              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }} className="relative group">
-                <TiltCard className="h-full perspective-1000">
-                  <div className="h-full rounded-2xl border-2 border-sky-200 bg-gradient-to-br from-sky-50 via-white to-sky-50/30 p-6 sm:p-8 shadow-lg hover:shadow-xl hover:border-sky-300 transition-all">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center mb-5 shadow-md shadow-sky-500/30">
-                      <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                    </div>
-                    <h3 className="text-xl font-bold text-stone-900 mb-2">2 fields only.</h3>
-                    <p className="text-stone-600 text-sm leading-relaxed mb-4">Other builders need 20+ fields. We need your name and target role. AI fills in experience bullets, skills, summary, and projects from 27K+ real resumes.</p>
-                    <div className="pt-4 border-t border-sky-200/50 space-y-2">
-                      <div className="flex items-center gap-2 rounded-lg border border-sky-200 bg-white px-3 py-2">
-                        <span className="text-xs text-sky-600 font-medium w-12">Name</span>
-                        <span className="text-xs text-stone-800">Priya Sharma</span>
-                      </div>
-                      <div className="flex items-center gap-2 rounded-lg border border-sky-200 bg-white px-3 py-2">
-                        <span className="text-xs text-sky-600 font-medium w-12">Role</span>
-                        <span className="text-xs text-stone-800">Data Analyst</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-sky-700">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
-                        <span className="text-xs font-semibold">Full resume generated</span>
-                      </div>
-                    </div>
-                  </div>
-                </TiltCard>
-              </motion.div>
-
-              {/* USP 3: Free features */}
-              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }} className="relative group">
-                <TiltCard className="h-full perspective-1000">
-                  <div className="h-full rounded-2xl border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-emerald-50/30 p-6 sm:p-8 shadow-lg hover:shadow-xl hover:border-emerald-300 transition-all">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center mb-5 shadow-md shadow-emerald-500/30">
-                      <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" /></svg>
-                    </div>
-                    <h3 className="text-xl font-bold text-stone-900 mb-2">Loaded with free tools</h3>
-                    <p className="text-stone-600 text-sm leading-relaxed mb-4">Most features are completely free. ATS scoring, skill analysis, bullet suggestions, role intelligence &mdash; no payment, no sign-up.</p>
-                    <div className="pt-4 border-t border-emerald-200/50 grid grid-cols-2 gap-1.5">
-                      {FREE_FEATURES.slice(0, 4).map((f) => (
-                        <div key={f.label} className="flex items-center gap-1.5 text-xs">
-                          <span className="w-4 h-4 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
-                            <svg className="w-2.5 h-2.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-                          </span>
-                          <span className="text-stone-700 font-medium">{f.label}</span>
+                    
+                    <div className="space-y-4">
+                      <h3 className="text-2xl font-bold text-slate-900">
+                        Just ₹15
+                        <span className="text-lg font-normal text-slate-600 block">No Subscription</span>
+                      </h3>
+                      
+                      <p className="text-slate-600 leading-relaxed">
+                        Premium AI resume technology at a fraction of the cost. Others charge ₹500+/month. We charge ₹15 once.
+                      </p>
+                      
+                      <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-4 border border-amber-200/50">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-3xl font-black text-amber-700">₹15</span>
+                              <span className="text-slate-500 line-through">₹500+</span>
+                            </div>
+                            <p className="text-xs text-slate-600 mt-1">per month elsewhere</p>
+                          </div>
+                          <div className="px-3 py-1 bg-emerald-500 text-white rounded-full text-sm font-bold">
+                            99% OFF
+                          </div>
                         </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* USP 2: Minimal Input */}
+              <motion.div 
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.1 }}
+                className="group"
+              >
+                <div className="relative h-full">
+                  {/* Glow effect */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-sky-400/20 to-blue-400/20 rounded-3xl blur-xl group-hover:blur-2xl transition-all" />
+                  
+                  <div className="relative bg-white rounded-3xl p-8 shadow-xl border border-sky-100/50 hover:shadow-2xl transition-all">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center mb-6 shadow-lg">
+                      <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                      </svg>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <h3 className="text-2xl font-bold text-slate-900">
+                        2 Fields Only
+                        <span className="text-lg font-normal text-slate-600 block">Maximum Simplicity</span>
+                      </h3>
+                      
+                      <p className="text-slate-600 leading-relaxed">
+                        Skip the 20+ forms. Just your name and target role. Our AI crafts your entire professional story.
+                      </p>
+                      
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3 p-3 bg-sky-50 rounded-xl border border-sky-200/50">
+                          <div className="w-8 h-8 bg-sky-500 rounded-lg flex items-center justify-center">
+                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-slate-900">Your Name</p>
+                            <p className="text-xs text-slate-600">Professional identity</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-3 p-3 bg-sky-50 rounded-xl border border-sky-200/50">
+                          <div className="w-8 h-8 bg-sky-500 rounded-lg flex items-center justify-center">
+                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-slate-900">Target Role</p>
+                            <p className="text-xs text-slate-600">Your dream position</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* USP 3: AI Excellence */}
+              <motion.div 
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.2 }}
+                className="group"
+              >
+                <div className="relative h-full">
+                  {/* Glow effect */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-400/20 to-green-400/20 rounded-3xl blur-xl group-hover:blur-2xl transition-all" />
+                  
+                  <div className="relative bg-white rounded-3xl p-8 shadow-xl border border-emerald-100/50 hover:shadow-2xl transition-all">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center mb-6 shadow-lg">
+                      <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                      </svg>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <h3 className="text-2xl font-bold text-slate-900">
+                        AI Excellence
+                        <span className="text-lg font-normal text-slate-600 block">Industry-Trained</span>
+                      </h3>
+                      
+                      <p className="text-slate-600 leading-relaxed">
+                        Trained on 27,000+ real resumes from top companies. Understands your industry's language.
+                      </p>
+                      
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span className="text-sm text-slate-700">FAANG-level quality</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span className="text-sm text-slate-700">82 role specializations</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span className="text-sm text-slate-700">ATS-optimized output</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
+        {/* ═══ PREMIUM FEATURES ═══ */}
+        <section className="py-20 sm:py-24 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            <motion.div 
+              className="text-center mb-16"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-100 to-orange-100 text-amber-800 rounded-full text-sm font-semibold mb-4">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+                Advanced AI Features
+              </div>
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
+                Everything You Need to
+                <span className="bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent"> Stand Out</span>
+              </h2>
+              <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+                Cutting-edge AI technology that understands what recruiters look for
+              </p>
+            </motion.div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {FEATURES.map((feature, index) => (
+                <motion.div
+                  key={feature.title}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                  className="group"
+                >
+                  <div className="relative h-full bg-white rounded-2xl p-6 shadow-lg border border-slate-100/50 hover:shadow-xl transition-all">
+                    <div className="flex items-start gap-4">
+                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br from-${feature.color}-500 to-${feature.color}-600 flex items-center justify-center shrink-0`}>
+                        <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={FEATURE_ICONS[feature.title]} />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="text-lg font-bold text-slate-900">{feature.title}</h3>
+                          <span className={`px-2 py-1 bg-${feature.color}-100 text-${feature.color}-700 rounded-full text-xs font-medium`}>
+                            {feature.tag}
+                          </span>
+                        </div>
+                        <p className="text-slate-600 text-sm leading-relaxed">{feature.desc}</p>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
                       ))}
                     </div>
                   </div>
@@ -776,29 +1102,107 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ═══ TESTIMONIALS ═══ */}
-        <section className="py-14 sm:py-18 bg-white/40 border-y border-amber-900/5">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6">
-            <div className="text-center mb-10">
-              <h2 className="text-2xl sm:text-3xl font-bold text-stone-900">Loved by 50,000+ professionals</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* ═══ PREMIUM TESTIMONIALS ═══ */}
+        <section className="py-20 sm:py-24 bg-gradient-to-br from-slate-50 to-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            <motion.div 
+              className="text-center mb-16"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-800 rounded-full text-sm font-semibold mb-4">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+                Success Stories
+              </div>
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
+                Trusted by
+                <span className="bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent"> 50,000+ Professionals</span>
+              </h2>
+              <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+                From FAANG to startups, see how our AI-powered resumes transformed careers
+              </p>
+            </motion.div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {TESTIMONIALS.slice(0, 6).map((t, i) => (
-                <motion.div key={t.name} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.06 }} whileHover={{ y: -3, transition: { duration: 0.2 } }} className="rounded-2xl border border-stone-200/90 bg-white p-5 shadow-sm hover:shadow-md hover:border-amber-100 transition-all">
-                  <div className="flex gap-0.5 text-amber-500 text-xs mb-2">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                  <p className="text-stone-700 text-sm leading-relaxed">&ldquo;{t.quote}&rdquo;</p>
-                  <div className="mt-4 flex items-center gap-3 pt-3 border-t border-stone-100">
-                    <div className="relative w-9 h-9 rounded-full overflow-hidden border border-stone-200 shrink-0">
-                      <Image src={t.image} alt="" width={36} height={36} loading="lazy" className="object-cover w-full h-full" />
+                <motion.div
+                  key={t.name}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  whileHover={{ y: -5 }}
+                  className="group"
+                >
+                  <div className="relative h-full bg-white rounded-3xl p-6 shadow-lg border border-slate-100/50 hover:shadow-2xl transition-all">
+                    {/* Quote icon */}
+                    <div className="absolute top-4 right-4 w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
+                      <svg className="w-4 h-4 text-amber-600" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
+                      </svg>
                     </div>
-                    <div>
-                      <p className="text-stone-900 font-semibold text-xs">{t.name}</p>
-                      <p className="text-stone-500 text-xs">{t.role}</p>
+
+                    {/* Rating */}
+                    <div className="flex gap-1 mb-4">
+                      {[...Array(5)].map((_, j) => (
+                        <svg key={j} className="w-5 h-5 text-amber-400 fill-current" viewBox="0 0 20 20">
+                          <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                        </svg>
+                      ))}
+                    </div>
+
+                    {/* Testimonial */}
+                    <p className="text-slate-700 leading-relaxed mb-6 text-sm">
+                      "{t.quote}"
+                    </p>
+
+                    {/* Author */}
+                    <div className="flex items-center gap-4 pt-4 border-t border-slate-100">
+                      <div className="relative">
+                        <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white shadow-lg">
+                          <Image src={t.image} alt={t.name} width={48} height={48} className="object-cover w-full h-full" />
+                        </div>
+                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-slate-900">{t.name}</p>
+                        <p className="text-sm text-slate-600">{t.role}</p>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
               ))}
             </div>
+
+            {/* Stats */}
+            <motion.div 
+              className="mt-16 bg-gradient-to-r from-amber-600 to-orange-600 rounded-3xl p-8 text-white text-center"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                  <div className="text-3xl font-bold mb-2">50,000+</div>
+                  <div className="text-amber-100">Happy Users</div>
+                </div>
+                <div>
+                  <div className="text-3xl font-bold mb-2">4.9/5</div>
+                  <div className="text-amber-100">Average Rating</div>
+                </div>
+                <div>
+                  <div className="text-3xl font-bold mb-2">96%</div>
+                  <div className="text-amber-100">Success Rate</div>
+                </div>
+                <div>
+                  <div className="text-3xl font-bold mb-2">82</div>
+                  <div className="text-amber-100">Role Specializations</div>
+                </div>
+              </div>
+            </motion.div>
           </div>
         </section>
 
@@ -931,6 +1335,102 @@ export default function Home() {
               <Link href="/pricing" className="inline-flex items-center justify-center rounded-xl border-2 border-stone-300 bg-white/80 px-8 py-4 text-base font-medium text-stone-700 hover:bg-stone-50 transition-all">
                 See pricing
               </Link>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ═══ PREMIUM FINAL CTA ═══ */}
+        <section className="py-20 sm:py-24 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
+          {/* Background effects */}
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-br from-amber-400/10 to-orange-400/10 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-emerald-400/10 to-sky-400/10 rounded-full blur-3xl" />
+          </div>
+
+          <div className="relative max-w-4xl mx-auto px-4 sm:px-6 text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="space-y-8"
+            >
+              {/* Badge */}
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/20 border border-amber-500/30 text-amber-300 rounded-full text-sm font-semibold">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Limited Time Offer
+              </div>
+
+              {/* Headline */}
+              <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight">
+                Ready to Land Your
+                <span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent"> Dream Job?</span>
+              </h2>
+
+              {/* Description */}
+              <p className="text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
+                Join 50,000+ professionals who transformed their careers with our AI-powered resumes. 
+                Your professional story starts here.
+              </p>
+
+              {/* CTA Buttons */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-8">
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Link 
+                    href="/create" 
+                    className="group relative inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-10 py-5 text-lg font-semibold text-white shadow-2xl hover:shadow-amber-500/25 transition-all overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-amber-600 to-orange-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <span className="relative flex items-center gap-3">
+                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      Create My Resume - ₹15
+                      <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                      </svg>
+                    </span>
+                  </Link>
+                </motion.div>
+
+                <div className="text-center">
+                  <p className="text-slate-400 text-sm mb-2">No subscription • No hidden fees</p>
+                  <div className="flex items-center gap-4 text-slate-500 text-sm">
+                    <div className="flex items-center gap-1">
+                      <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>30-day money back</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                      <span>Secure payment</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Trust indicators */}
+              <div className="flex items-center justify-center gap-8 pt-8 border-t border-slate-700">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-white">50,000+</div>
+                  <div className="text-slate-400 text-sm">Happy Users</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-white">4.9/5</div>
+                  <div className="text-slate-400 text-sm">Rating</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-white">96%</div>
+                  <div className="text-slate-400 text-sm">Success Rate</div>
+                </div>
+              </div>
             </motion.div>
           </div>
         </section>

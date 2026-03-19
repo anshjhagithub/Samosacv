@@ -4,6 +4,7 @@ import { useCallback, useState, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import type {
   ResumeData,
   PersonalInfo,
@@ -414,19 +415,43 @@ export function ResumeBuilder({ data, onUpdate }: ResumeBuilderProps) {
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 xl:gap-10">
           {/* Left: form sections */}
           <div className="space-y-6">
-            {/* Teaser so users scroll down to free tools */}
-            <a
-              href="#free-tools"
-              onClick={(e) => {
-                e.preventDefault();
-                document.getElementById("free-tools")?.scrollIntoView({ behavior: "smooth" });
-              }}
-              className="block rounded-xl border border-emerald-200 bg-gradient-to-r from-emerald-50/80 to-white p-4 text-center no-underline hover:from-emerald-100/80 transition-colors"
+            {/* Enhanced Teaser for Free Tools */}
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
             >
-              <p className="text-sm font-medium text-stone-800">Free tools below — ATS score, skill gap & role intel</p>
-              <p className="text-xs text-stone-500 mt-0.5">Scroll down to improve your resume with one click</p>
-              <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium mt-2">See free tools ↓</span>
-            </a>
+              <a
+                href="#free-tools"
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.getElementById("free-tools")?.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="block rounded-xl border border-emerald-200 bg-gradient-to-r from-emerald-50 via-emerald-50/80 to-white p-5 text-center no-underline hover:from-emerald-100/80 transition-all hover:shadow-lg hover:scale-[1.02] group"
+              >
+                <motion.div 
+                  className="flex items-center justify-center gap-2 mb-2"
+                  animate={{ scale: [1, 1.05, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  <span className="text-2xl">🎉</span>
+                  <span className="text-lg font-bold text-emerald-700">6 FREE Career Tools</span>
+                </motion.div>
+                <p className="text-sm font-medium text-stone-800 mb-2">ATS Optimizer • Interview Prep • LinkedIn Optimizer • Cover Letter • Skill Roadmap • ATS Breakdown</p>
+                <p className="text-xs text-stone-500 mb-3">All completely free - no payment required. Boost your career with professional tools!</p>
+                <motion.div 
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <span>Try Free Tools Now</span>
+                  <motion.span
+                    animate={{ y: [0, 3, 0] }}
+                    transition={{ duration: 1, repeat: Infinity }}
+                  >↓</motion.span>
+                </motion.div>
+              </a>
+            </motion.div>
 
             <section id="personal" className="scroll-mt-24">
               <SectionCard title="Personal information" defaultOpen onImprove={undefined} addLabel="" onAdd={undefined}>
@@ -988,8 +1013,162 @@ export function ResumeBuilder({ data, onUpdate }: ResumeBuilderProps) {
                 )}
               </div>
             </section>
-              );
-            })()}
+
+            {/* New: Free Tools Showcase */}
+            <motion.section 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="scroll-mt-24 space-y-4"
+            >
+              <motion.div 
+                className="text-center mb-6"
+                initial={{ scale: 0.9 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.5 }}
+              >
+                <h2 className="text-xl font-bold text-stone-900 flex items-center justify-center gap-2 mb-2">
+                  <motion.span 
+                    className="text-2xl"
+                    animate={{ rotate: [0, 10, -10, 0] }}
+                    transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                  >🚀</motion.span>
+                  All Career Tools - Completely FREE
+                  <motion.span 
+                    className="text-2xl"
+                    animate={{ rotate: [0, -10, 10, 0] }}
+                    transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                  >🎉</motion.span>
+                </h2>
+                <p className="text-sm text-stone-600">No payment required. Boost your job search with professional tools.</p>
+              </motion.div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[
+                  {
+                    title: "🎯 Interview Prep",
+                    desc: "Role-specific questions & STAR method answers",
+                    features: ["Common questions", "STAR examples", "Salary negotiation tips"],
+                    color: "violet",
+                    delay: 0
+                  },
+                  {
+                    title: "🤖 ATS Optimizer", 
+                    desc: "Get 90+ ATS score with keyword optimization",
+                    features: ["Action verbs", "Keyword suggestions", "Format fixes"],
+                    color: "emerald",
+                    delay: 0.1
+                  },
+                  {
+                    title: "💼 LinkedIn Optimizer",
+                    desc: "Get found by recruiters with optimized profile",
+                    features: ["Headline rewrite", "About section", "Skills optimization"],
+                    color: "blue",
+                    delay: 0.2
+                  },
+                  {
+                    title: "📄 Cover Letter",
+                    desc: "Professional cover letter template",
+                    features: ["Tailored content", "Professional format", "Easy customization"],
+                    color: "sky",
+                    delay: 0.3
+                  },
+                  {
+                    title: "🗺️ Skill Roadmap",
+                    desc: "Personalized 3-month learning plan",
+                    features: ["Skill gaps", "Learning resources", "Timeline"],
+                    color: "amber",
+                    delay: 0.4
+                  },
+                  {
+                    title: "📊 ATS Breakdown",
+                    desc: "Detailed analysis of your resume score",
+                    features: ["Section analysis", "Improvement tips", "Score breakdown"],
+                    color: "emerald",
+                    delay: 0.5
+                  }
+                ].map((tool, index) => (
+                  <motion.div
+                    key={tool.title}
+                    initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.5, delay: tool.delay }}
+                    whileHover={{ 
+                      scale: 1.03, 
+                      boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" 
+                    }}
+                    className={`rounded-xl border-2 border-${tool.color}-200 bg-gradient-to-br from-${tool.color}-50/60 via-white to-${tool.color}-50/30 p-4 cursor-pointer group`}
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <motion.div 
+                        className="w-8 h-8 rounded-lg bg-white border border-${tool.color}-300 flex items-center justify-center"
+                        whileHover={{ rotate: 360 }}
+                        transition={{ duration: 0.6 }}
+                      >
+                        <span className="text-sm">{tool.title.split(' ')[0]}</span>
+                      </motion.div>
+                      <h3 className="text-sm font-bold text-stone-900">{tool.title.split(' ').slice(1).join(' ')}</h3>
+                    </div>
+                    <p className="text-xs text-stone-600 mb-3">{tool.desc}</p>
+                    <div className="space-y-1">
+                      {tool.features.map((feature, i) => (
+                        <motion.div 
+                          key={feature}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.3, delay: tool.delay + 0.1 + i * 0.1 }}
+                          className="flex items-center gap-1"
+                        >
+                          <svg className={`w-3 h-3 text-${tool.color}-600 shrink-0`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span className="text-xs text-stone-700">{feature}</span>
+                        </motion.div>
+                      ))}
+                    </div>
+                    <motion.div 
+                      className="mt-3 pt-3 border-t border-${tool.color}-200"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.5, delay: tool.delay + 0.4 }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-emerald-600">FREE</span>
+                        <motion.span 
+                          className="text-xs text-stone-500"
+                          whileHover={{ scale: 1.1 }}
+                        >
+                          Available on review page →
+                        </motion.span>
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                ))}
+              </div>
+
+              <motion.div 
+                className="text-center mt-6 p-4 bg-gradient-to-r from-emerald-50 to-sky-50 rounded-xl border border-emerald-200"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.8 }}
+              >
+                <p className="text-sm font-medium text-stone-800 mb-2">
+                  🎯 <span className="text-emerald-700 font-bold">Pro Tip:</span> Complete your resume first, then visit the review page to access all these free tools!
+                </p>
+                <motion.a
+                  href="/resume/review"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Go to Review Page
+                  <motion.span
+                    animate={{ x: [0, 3, 0] }}
+                    transition={{ duration: 1, repeat: Infinity }}
+                  >→</motion.span>
+                </motion.a>
+              </motion.div>
+            </motion.section>
           </div>
 
           {/* Right: add-ons + cart first (above fold), then unlock CTA + preview */}
@@ -1033,7 +1212,7 @@ export function ResumeBuilder({ data, onUpdate }: ResumeBuilderProps) {
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-semibold text-stone-900">{addon.label}</p>
                         <p className="text-[10px] text-stone-500 mt-0.5 line-clamp-2">{addon.benefit}</p>
-                        <p className="text-[10px] text-amber-600 font-bold mt-1">&#x20B9;{getPrice(addon.slug)}</p>
+                        <p className="text-[10px] text-emerald-600 font-bold mt-1">FREE</p>
                       </div>
                     </button>
                   );
@@ -1041,7 +1220,7 @@ export function ResumeBuilder({ data, onUpdate }: ResumeBuilderProps) {
               </div>
               <div className="mt-4 pt-4 border-t border-stone-200">
                 {(() => {
-                  const total = 15 + ADDON_SLUGS.filter(s => addonCart[s]).reduce((sum, s) => sum + getPrice(s), 0);
+                  const total = 15; // Only resume PDF, all add-ons are free
                   const addonCount = ADDON_SLUGS.filter(s => addonCart[s]).length;
                   return (
                     <>

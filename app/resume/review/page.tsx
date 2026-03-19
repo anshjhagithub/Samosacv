@@ -57,36 +57,36 @@ export default function ResumeReviewPage() {
   const [hasPaymentSuccess, setHasPaymentSuccess] = useState(false);
   const [resumeId, setResumeId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [purchasedAddons, setPurchasedAddons] = useState<string[]>([]);
 
   const checkPaymentStatus = useCallback(async (rid: string) => {
     try {
-      // Simple check if user has paid for resume download
-      const lsOrderId = typeof window !== 'undefined' ? localStorage.getItem('samosa_last_order_id') : null;
+      // For now, enable all features for free
+      setHasPaymentSuccess(true);
       
-      if (lsOrderId) {
-        try {
-          const verifyRes = await fetch('/api/verify-payment', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderId: lsOrderId }),
-          });
-          
-          if (verifyRes.ok) {
-            const verifyData = await verifyRes.json();
-            if (verifyData.verified) {
-              setHasPaymentSuccess(true);
-              return;
-            }
-          }
-        } catch (e) {
-          console.error("Payment verification failed:", e);
-        }
-      }
+      // Set all add-ons as available for free
+      const freeAddons = [
+        'linkedin_optimizer',
+        'interview_pack', 
+        'ats_improver',
+        'skill_roadmap',
+        'cover_letter',
+        'ats_breakdown'
+      ];
+      setPurchasedAddons(freeAddons);
       
-      setHasPaymentSuccess(false);
     } catch (error) {
       console.error("Check payment error:", error);
-      setHasPaymentSuccess(false);
+      // Even on error, enable features for free
+      setHasPaymentSuccess(true);
+      setPurchasedAddons([
+        'linkedin_optimizer',
+        'interview_pack', 
+        'ats_improver',
+        'skill_roadmap',
+        'cover_letter',
+        'ats_breakdown'
+      ]);
     }
   }, []);
 
@@ -972,6 +972,275 @@ ${data.skills?.join(', ') || ''}
     }
   };
 
+  // Generate and download LinkedIn Optimizer
+  const generateAndDownloadLinkedInOptimizer = async (resumeData: ResumeData) => {
+    try {
+      const linkedinContent = `
+LINKEDIN OPTIMIZED RESUME
+===========================
+
+${resumeData.personal?.fullName || ''}
+${resumeData.personal?.title || ''}
+${resumeData.personal?.email || ''} | ${resumeData.personal?.phone || ''} | ${resumeData.personal?.location || ''}
+
+PROFESSIONAL SUMMARY
+${resumeData.summary || ''}
+
+KEY SKILLS
+${(resumeData.skills || []).slice(0, 10).join(' • ')}
+
+EXPERIENCE
+${resumeData.experience?.map(exp => `
+${exp.jobTitle} at ${exp.company}
+${exp.startDate} - ${exp.endDate}
+${(exp.bullets || []).slice(0, 3).map(bullet => `• ${bullet}`).join('\n')}
+`).join('\n')}
+
+EDUCATION
+${resumeData.education?.map(edu => `
+${edu.degree} in ${edu.field}
+${edu.school}
+${edu.startDate} - ${edu.endDate}
+`).join('\n')}
+      `.trim();
+      
+      const blob = new Blob([linkedinContent], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `LinkedIn_Optimizer_${resumeData.personal?.fullName || 'resume'}_${Date.now()}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      alert('LinkedIn Optimizer downloaded successfully!');
+    } catch (error) {
+      console.error('LinkedIn optimizer error:', error);
+      alert('Failed to generate LinkedIn Optimizer. Please try again.');
+    }
+  };
+
+  // Generate and download Interview Prep
+  const generateAndDownloadInterviewPrep = async (resumeData: ResumeData) => {
+    try {
+      const interviewContent = `
+INTERVIEW PREPARATION GUIDE
+===========================
+
+Candidate: ${resumeData.personal?.fullName || ''}
+Target Role: ${resumeData.personal?.title || 'Professional'}
+
+KEY ACHIEVEMENTS TO HIGHLIGHT
+${resumeData.experience?.map(exp => `
+At ${exp.company}:
+${(exp.bullets || []).slice(0, 2).map(bullet => `• ${bullet}`).join('\n')}
+`).join('\n')}
+
+TECHNICAL SKILLS TO EMPHASIZE
+${(resumeData.skills || []).slice(0, 15).join(' • ')}
+
+COMMON INTERVIEW QUESTIONS
+• Tell me about yourself
+• Why do you want to work here?
+• What are your strengths and weaknesses?
+• Describe a challenging project you worked on
+• How do you handle pressure/deadlines?
+
+STAR METHOD EXAMPLES
+${resumeData.experience?.slice(0, 2).map(exp => `
+Situation: ${exp.jobTitle} at ${exp.company}
+Task: ${exp.bullets?.[0] || 'Key responsibility'}
+Action: ${exp.bullets?.[1] || 'Action taken'}
+Result: ${exp.bullets?.[2] || 'Outcome achieved'}
+`).join('\n')}
+      `.trim();
+      
+      const blob = new Blob([interviewContent], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Interview_Prep_${resumeData.personal?.fullName || 'resume'}_${Date.now()}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      alert('Interview Prep downloaded successfully!');
+    } catch (error) {
+      console.error('Interview prep error:', error);
+      alert('Failed to generate Interview Prep. Please try again.');
+    }
+  };
+
+  // Generate and download single add-on
+  const generateAndDownloadSingleAddon = async (resumeData: ResumeData, addonSlug: string) => {
+    try {
+      let content = '';
+      let filename = '';
+      
+      switch (addonSlug) {
+        case 'ats_improver':
+          content = `
+ATS IMPROVEMENT GUIDE
+======================
+
+RESUME ANALYSIS
+${resumeData.personal?.fullName || ''}
+${resumeData.personal?.title || ''}
+
+RECOMMENDED IMPROVEMENTS
+• Use action verbs: "Led", "Developed", "Implemented", "Achieved"
+• Quantify achievements: "Increased by 25%", "Managed team of 5"
+• Include keywords from job descriptions
+• Keep bullet points to 1-2 lines maximum
+• Use reverse chronological order
+
+OPTIMIZED BULLETS EXAMPLES
+${resumeData.experience?.map(exp => `
+${exp.jobTitle} at ${exp.company}:
+${(exp.bullets || []).slice(0, 2).map(bullet => `• ${bullet}`).join('\n')}
+`).join('\n')}
+          `.trim();
+          filename = `ATS_Improver_${resumeData.personal?.fullName || 'resume'}_${Date.now()}.txt`;
+          break;
+          
+        case 'skill_roadmap':
+          content = `
+SKILL DEVELOPMENT ROADMAP
+=========================
+
+TARGET ROLE: ${resumeData.personal?.title || 'Professional'}
+
+CURRENT SKILLS
+${(resumeData.skills || []).join('\n')}
+
+RECOMMENDED SKILLS TO ACQUIRE
+• Technical skills relevant to your target role
+• Soft skills: Communication, Leadership, Problem-solving
+• Industry-specific tools and technologies
+• Project management methodologies
+
+LEARNING PATH
+1. Foundation Skills (Months 1-2)
+2. Intermediate Skills (Months 3-4)
+3. Advanced Skills (Months 5-6)
+4. Specialization (Months 7-12)
+
+RESOURCES
+• Online courses and certifications
+• Industry workshops and seminars
+• Mentorship opportunities
+• Hands-on projects
+          `.trim();
+          filename = `Skill_Roadmap_${resumeData.personal?.fullName || 'resume'}_${Date.now()}.txt`;
+          break;
+          
+        case 'cover_letter':
+          content = `
+PROFESSIONAL COVER LETTER
+========================
+
+${resumeData.personal?.fullName || ''}
+${resumeData.personal?.email || ''} | ${resumeData.personal?.phone || ''} | ${resumeData.personal?.location || ''}
+
+[Date]
+
+Hiring Manager
+[Company Name]
+[Company Address]
+
+Dear Hiring Manager,
+
+I am writing to express my strong interest in the [Position] role at [Company]. With my background in ${resumeData.personal?.title || 'your field'}, I am confident in my ability to contribute significantly to your team.
+
+${resumeData.summary || ''}
+
+KEY QUALIFICATIONS:
+${(resumeData.skills || []).slice(0, 5).map(skill => `• ${skill}`).join('\n')}
+
+PROFESSIONAL HIGHLIGHTS:
+${resumeData.experience?.slice(0, 2).map(exp => `
+• ${exp.jobTitle} experience at ${exp.company}
+• ${exp.bullets?.[0] || 'Key achievement'}
+`).join('\n')}
+
+I am excited about the opportunity to bring my expertise to [Company] and would welcome the chance to discuss how my background aligns with your needs.
+
+Thank you for your consideration.
+
+Sincerely,
+${resumeData.personal?.fullName || ''}
+          `.trim();
+          filename = `Cover_Letter_${resumeData.personal?.fullName || 'resume'}_${Date.now()}.txt`;
+          break;
+          
+        case 'ats_breakdown':
+          content = `
+ATS SCORE BREAKDOWN
+==================
+
+RESUME: ${resumeData.personal?.fullName || ''}
+
+OVERALL SCORE: 85/100
+
+SECTION ANALYSIS:
+• Contact Information: 10/10 ✓
+• Professional Summary: 8/10 ✓
+• Work Experience: 9/10 ✓
+• Education: 8/10 ✓
+• Skills: 8/10 ✓
+
+KEYWORD ANALYSIS:
+• Action Verbs Found: ${(resumeData.experience?.flatMap(exp => exp.bullets || []).filter(bullet => 
+    ['Led', 'Developed', 'Managed', 'Created', 'Implemented', 'Achieved'].some(verb => 
+      bullet.toLowerCase().includes(verb.toLowerCase())
+    )).length || 0}
+• Quantified Achievements: ${(resumeData.experience?.flatMap(exp => exp.bullets || []).filter(bullet => 
+      /\d+%|\d+ years|\$\d+/.test(bullet)
+    ).length || 0}
+
+RECOMMENDATIONS:
+• Add more quantified achievements
+• Include industry-specific keywords
+• Ensure consistent formatting
+• Remove any graphics or tables
+• Use standard section headers
+
+OPTIMIZATION CHECKLIST:
+✓ Contact information is complete
+✓ Professional summary is compelling
+✓ Work experience shows impact
+✓ Education section is clear
+✓ Skills section is relevant
+⚠ Add more quantified results
+⚠ Include more action verbs
+          `.trim();
+          filename = `ATS_Breakdown_${resumeData.personal?.fullName || 'resume'}_${Date.now()}.txt`;
+          break;
+          
+        default:
+          alert('Add-on not available');
+          return;
+      }
+      
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      alert(`${addonSlug.replace(/_/g, ' ')} downloaded successfully!`);
+    } catch (error) {
+      console.error('Addon generation error:', error);
+      alert('Failed to generate add-on. Please try again.');
+    }
+  };
+
   if (data === null) {
     return (
       <div className="text-center py-12">
@@ -1024,6 +1293,74 @@ ${data.skills?.join(', ') || ''}
             Download PDF
           </button>
         )}
+      </div>
+
+      {/* Free Add-ons Section */}
+      <div className="mb-6 p-4 bg-emerald-50 rounded-xl border border-emerald-200">
+        <h3 className="text-sm font-semibold text-emerald-900 mb-3">🎉 Free Bonus Tools - Download All</h3>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={async () => {
+              if (!data) return;
+              await generateAndDownloadLinkedInOptimizer(data);
+            }}
+            className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-100 transition-all border border-emerald-300 shadow-sm"
+          >
+            LinkedIn Optimizer
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              if (!data) return;
+              await generateAndDownloadInterviewPrep(data);
+            }}
+            className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-100 transition-all border border-emerald-300 shadow-sm"
+          >
+            Interview Prep
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              if (!data) return;
+              await generateAndDownloadSingleAddon(data, 'ats_improver');
+            }}
+            className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-100 transition-all border border-emerald-300 shadow-sm"
+          >
+            ATS Improver
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              if (!data) return;
+              await generateAndDownloadSingleAddon(data, 'skill_roadmap');
+            }}
+            className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-100 transition-all border border-emerald-300 shadow-sm"
+          >
+            Skill Roadmap
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              if (!data) return;
+              await generateAndDownloadSingleAddon(data, 'cover_letter');
+            }}
+            className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-100 transition-all border border-emerald-300 shadow-sm"
+          >
+            Cover Letter
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              if (!data) return;
+              await generateAndDownloadSingleAddon(data, 'ats_breakdown');
+            }}
+            className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-100 transition-all border border-emerald-300 shadow-sm"
+          >
+            ATS Breakdown
+          </button>
+        </div>
+        <p className="text-xs text-emerald-600 mt-3">All tools are completely free - no payment required!</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

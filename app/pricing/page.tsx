@@ -8,18 +8,7 @@ import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { MobileNumberModal } from "@/components/pricing/MobileNumberModal";
 
-const ADDONS = [
-  { name: "Resume Generation", price: 15, desc: "AI builds your resume from scratch", popular: true },
-  { name: "ATS Optimizer", price: 5, desc: "Score 90+ and pass every filter", popular: true },
-  { name: "Mock Interview Qs", price: 6, desc: "Role-specific questions + ideal answers" },
-  { name: "Cover Letter", price: 5, desc: "Tailored cover letter for any job" },
-  { name: "LinkedIn Optimizer", price: 3, desc: "Rewrite your LinkedIn for recruiters" },
-  { name: "Skill Roadmap", price: 4, desc: "Personalized learning path for your role" },
-  { name: "ATS Breakdown", price: 3, desc: "Detailed score + what to fix" },
-  { name: "Resume Regeneration", price: 2, desc: "Re-generate with a different style" },
-];
-
-const PREMIUM_AMOUNT = 49;
+const RESUME_PRICE = 15;
 
 export default function PricingPage() {
   const [payLoading, setPayLoading] = useState(false);
@@ -41,7 +30,7 @@ export default function PricingPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          amount: PREMIUM_AMOUNT,
+          amount: RESUME_PRICE,
           mobileNumber: mobile 
         }),
       });
@@ -102,82 +91,84 @@ export default function PricingPage() {
           </div>
         </motion.section>
 
-        {/* Add-on features */}
+        {/* Simple features */}
         <section className="mb-12">
-          <h2 className="text-xl font-bold text-stone-900 mb-1">Add-on features</h2>
-          <p className="text-stone-500 text-sm mb-6">Supercharge your job search. Pay per feature.</p>
+          <h2 className="text-xl font-bold text-stone-900 mb-1">What's included</h2>
+          <p className="text-stone-500 text-sm mb-6">Everything you need for a professional resume.</p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {ADDONS.filter((a) => a.name !== "Resume Generation").map((addon, i) => (
+            {[
+              { name: "AI Content", desc: "Professional bullet points", icon: "✨" },
+              { name: "35+ Templates", desc: "Modern, clean designs", icon: "📄" },
+              { name: "ATS Optimized", desc: "Pass recruiter filters", icon: "🎯" },
+              { name: "Instant PDF", desc: "Download immediately", icon: "⚡" }
+            ].map((feature, i) => (
               <motion.div
-                key={addon.name}
+                key={feature.name}
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.15 + i * 0.04 }}
                 whileHover={{ y: -3, transition: { duration: 0.15 } }}
-                className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm hover:shadow-md hover:border-amber-200 transition-all relative"
+                className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm hover:shadow-md hover:border-amber-200 transition-all"
               >
-                {addon.popular && (
-                  <span className="absolute -top-2 right-3 text-[9px] font-bold uppercase tracking-widest text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">Popular</span>
-                )}
-                <div className="flex items-baseline justify-between mb-1">
-                  <h3 className="text-stone-900 font-semibold text-sm">{addon.name}</h3>
-                  <span className="text-amber-700 font-bold">₹{addon.price}</span>
-                </div>
-                <p className="text-stone-500 text-xs leading-relaxed">{addon.desc}</p>
+                <div className="text-2xl mb-2">{feature.icon}</div>
+                <h3 className="text-stone-900 font-semibold text-sm mb-1">{feature.name}</h3>
+                <p className="text-stone-500 text-xs leading-relaxed">{feature.desc}</p>
               </motion.div>
             ))}
           </div>
         </section>
 
-        {/* Bundle deal */}
-        <section className="mb-12">
-          <motion.div
-            className="rounded-2xl border-2 border-amber-300 bg-gradient-to-br from-amber-50/80 to-white p-6 sm:p-8 relative overflow-hidden"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <div className="absolute top-0 right-0 bg-amber-600 text-white text-[10px] font-bold uppercase tracking-wider px-4 py-1.5 rounded-bl-xl">Best Value</div>
-            <div className="grid sm:grid-cols-2 gap-6 items-center">
-              <div>
-                <h2 className="text-2xl font-bold text-stone-900 mb-2">Premium Bundle — ₹49</h2>
-                <p className="text-stone-600 text-sm mb-4">5 resume generations + ATS optimizer included with every generation. One-time payment.</p>
-                <div className="space-y-1.5 mb-4">
-                  <div className="flex items-center gap-2 text-sm text-stone-600">
-                    <span className="text-amber-600">✓</span> 5 premium AI generations
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-stone-600">
-                    <span className="text-amber-600">✓</span> ATS optimizer included (worth ₹55)
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-stone-600">
-                    <span className="text-amber-600">✓</span> Higher-quality AI model
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-stone-600">
-                    <span className="text-amber-600">✓</span> After 5: just ₹15 per generation
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 text-xs text-stone-500 mb-4">
-                  <span className="line-through">5 × ₹15 gen + 5 × ₹5 ATS = ₹100</span>
-                  <span className="text-amber-700 font-bold text-sm">You pay ₹49 — save 51%</span>
-                </div>
-              </div>
-              <div className="text-center sm:text-right">
-                <div className="inline-block">
-                  <div className="text-4xl font-bold text-stone-900 mb-1">₹49</div>
-                  <p className="text-stone-500 text-xs mb-4">one-time payment</p>
-                  <button
-                    type="button"
-                    onClick={handlePayNow}
-                    disabled={payLoading}
-                    className="w-full rounded-xl px-6 py-3.5 text-sm font-semibold bg-amber-600 text-white hover:bg-amber-700 shadow-lg shadow-amber-900/15 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:-translate-y-0.5"
-                  >
-                    {payLoading ? "Opening checkout…" : "Unlock Premium Bundle"}
-                  </button>
-                </div>
-              </div>
+        {/* Free Tools Banner */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mb-12"
+        >
+          <div className="rounded-2xl border-2 border-emerald-300 bg-gradient-to-br from-emerald-50/80 to-white p-6 text-center">
+            <motion.div 
+              className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-sm font-bold mb-3"
+              animate={{ scale: [1, 1.05, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              🎉 AMAZING VALUE
+            </motion.div>
+            <h3 className="text-xl font-bold text-stone-900 mb-2">
+              All 6 Career Tools Included 
+              <motion.span 
+                className="text-emerald-600 ml-2"
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              >100% FREE</motion.span>
+            </h3>
+            <p className="text-stone-600 mb-4">
+              Interview Prep • ATS Optimizer • LinkedIn Tools • Cover Letter • Skill Roadmap • ATS Breakdown
+            </p>
+            <div className="flex flex-wrap justify-center gap-2 mb-4">
+              {["🎯 Interview Prep", "🤖 ATS Optimizer", "💼 LinkedIn Tools", "📄 Cover Letter", "🗺️ Skill Roadmap", "📊 ATS Breakdown"].map((tool, i) => (
+                <motion.div
+                  key={tool}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3, delay: 0.4 + i * 0.1 }}
+                  className="px-3 py-1 bg-white border border-emerald-200 rounded-lg text-xs text-stone-700"
+                >
+                  {tool}
+                </motion.div>
+              ))}
             </div>
-          </motion.div>
-        </section>
+            <Link 
+              href="/create"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 transition-colors"
+            >
+              Start Using Free Tools
+              <motion.span
+                animate={{ x: [0, 3, 0] }}
+                transition={{ duration: 1, repeat: Infinity }}
+              >→</motion.span>
+            </Link>
+          </div>
+        </motion.section>
 
         <p className="text-center text-stone-400 text-xs">
           Sign-up required for payment tracking and generation history. All pricing in INR.
