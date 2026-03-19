@@ -61,64 +61,88 @@ export default function ResumeReviewPage() {
 
   const checkPaymentAndAddons = useCallback(async (rid: string) => {
     try {
+      console.log("🔍 Checking payment and addons for resume:", rid);
+      
       // Step 1: Try to verify payment via the order_id if we have it
       const lsOrderId = typeof window !== 'undefined' ? localStorage.getItem('samosa_last_order_id') : null;
+      console.log("📋 LocalStorage order_id:", lsOrderId);
       
       if (lsOrderId) {
         // Force-verify with Cashfree to sync DB
         try {
-          await fetch('/api/verify-payment', {
+          const verifyRes = await fetch('/api/verify-payment', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ orderId: lsOrderId }),
           });
+          console.log("💳 Verify payment response:", verifyRes.status);
         } catch (e) {
-          console.error("Verify payment failed:", e);
+          console.error("❌ Verify payment failed:", e);
         }
       }
       
       // Step 2: Check if the order is paid in DB
-      const res = await fetch(`/api/resume/download?resume_id=${rid}`);
-      if (res.ok) {
+      const downloadRes = await fetch(`/api/resume/download?resume_id=${rid}`);
+      console.log("📥 Download API response:", downloadRes.status);
+      
+      if (downloadRes.ok) {
         setHasPaymentSuccess(true);
+        console.log("✅ Payment success detected");
         
         // Step 3: Fetch addons from the order
         try {
           const orderRes = await fetch(`/api/get-order?resume_id=${rid}`);
+          console.log("📦 Get order API response:", orderRes.status);
+          
           if (orderRes.ok) {
             const orderData = await orderRes.json();
+            console.log("📋 Order data:", orderData);
+            
             const lineItems = orderData.line_items || {};
+            console.log("🛍️ Line items:", lineItems);
+            
             const addons = Object.entries(lineItems)
               .filter(([slug, purchased]) => purchased === true && slug !== 'resume_pdf')
               .map(([slug]) => slug);
+            console.log("🎯 Extracted addons:", addons);
+            
             setPurchasedAddons(addons);
+          } else {
+            const errorText = await orderRes.text();
+            console.error("❌ Get order failed:", orderRes.status, errorText);
           }
         } catch (e) {
-          console.error("Failed to fetch addons:", e);
+          console.error("❌ Failed to fetch addons:", e);
         }
         
         // Also check localStorage cart as backup
         if (purchasedAddons.length === 0) {
           try {
             const cartStr = typeof window !== 'undefined' ? localStorage.getItem('samosa_last_cart') : null;
+            console.log("🛒 LocalStorage cart:", cartStr);
+            
             if (cartStr) {
               const cart = JSON.parse(cartStr);
               const addons = Object.entries(cart)
                 .filter(([slug, purchased]) => purchased === true && slug !== 'resume_pdf')
                 .map(([slug]) => slug);
+              console.log("🎯 Cart addons:", addons);
+              
               if (addons.length > 0) {
                 setPurchasedAddons(addons);
               }
             }
           } catch (e) {
-            console.error("Failed to parse cart from localStorage:", e);
+            console.error("❌ Failed to parse cart:", e);
           }
         }
-      } else if (res.status === 402) {
+      } else {
+        const errorText = await downloadRes.text();
+        console.error("❌ Download API failed:", downloadRes.status, errorText);
         setHasPaymentSuccess(false);
       }
     } catch (error) {
-      console.error("Payment status check failed:", error);
+      console.error("❌ Check payment error:", error);
       setHasPaymentSuccess(false);
     }
   }, [purchasedAddons.length]);
