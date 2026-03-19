@@ -38,6 +38,8 @@ const ResumePreviewPanel = dynamic(
     ),
   }
 );
+import { scoreResume } from "@/lib/ats/engine.client";
+import { generateDocFile } from "@/lib/export/docx";
 import { rolePresets } from "@/lib/rolePresets";
 
 const inputClass =
@@ -1250,6 +1252,7 @@ export function ResumeBuilder({ data, onUpdate }: ResumeBuilderProps) {
               data={data}
               onTemplateChange={(templateId) => persist({ ...data, templateId })}
               onDownload={isPaid ? undefined : handleDownloadResume}
+              onDownloadDocx={() => data && generateDocFile(data)}
               isPaid={isPaid}
               purchasedAddons={purchasedAddons}
               toolbarExtra={

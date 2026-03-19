@@ -14,6 +14,7 @@ export interface UnlockPreview {
   targetRole?: string;
   customerPhone?: string;
   customerEmail?: string;
+  purchasedAddons?: string[];
 }
 
 export function loadResume(): ResumeData | null {

@@ -11,6 +11,7 @@ import { createEmptyProject } from "@/types/resume";
 import { UnlockPdfModal } from "@/components/resume-flow/UnlockPdfModal";
 import type { ResumeModifier } from "@/lib/ai/resume-modify";
 import { scoreResume } from "@/lib/ats/engine.client";
+import { generateDocFile } from "@/lib/export/docx";
 
 const ResumePreviewPanel = dynamic(
   () => import("@/components/builder/ResumePreviewPanel").then((m) => ({ default: m.ResumePreviewPanel })),
@@ -131,7 +132,10 @@ export default function ResumeReviewPage() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Failed");
-      persist(json.resume);
+      
+      // Update local state and storage
+      setData(json.resume);
+      saveResume(json.resume);
     } catch (e) {
       console.error(e);
     } finally {
@@ -194,6 +198,63 @@ export default function ResumeReviewPage() {
   // Get current ATS score
   const currentAtsScore = data ? calculateAtsScore(data) : 0;
   const displayAtsScore = currentAtsScore > 0 ? currentAtsScore : Math.min(100, generated?.atsScore ?? 0);
+
+  const generateAddons = async (resumeData: ResumeData) => {
+    try {
+      const preview = getUnlockPreview();
+      const purchasedAddonsList = preview?.purchasedAddons || purchasedAddons;
+      if (purchasedAddonsList.length === 0) return;
+
+      const res = await fetch("/api/generate-addons", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          resumeText: JSON.stringify(resumeData),
+          targetRole: resumeData.personal?.title || "Professional",
+          addons: purchasedAddonsList
+        })
+      });
+      
+      const resData = await res.json();
+      const addonsResult = resData.addons || [];
+      if (addonsResult.length === 0) return;
+
+      const { AddonsDocument } = await import("@/components/addons/AddonsDocument");
+      const { renderToStaticMarkup } = await import("react-dom/server");
+      const html2canvas = (await import("html2canvas-pro")).default;
+      const jsPDF = (await import("jspdf")).default;
+
+      for (const addon of addonsResult) {
+        const container = document.createElement('div');
+        container.style.position = 'absolute';
+        container.style.top = '0';
+        container.style.left = '-9999px';
+        container.style.width = '794px';
+        container.style.backgroundColor = '#ffffff';
+        document.body.appendChild(container);
+
+        const markup = renderToStaticMarkup(<AddonsDocument data={resumeData} addons={[addon]} />);
+        container.innerHTML = markup;
+
+        const pdf = new jsPDF("p", "mm", "a4");
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const docEl = container.firstElementChild as HTMLElement;
+        
+        if (docEl) {
+          const canvas = await html2canvas(docEl, { scale: 2, useCORS: true });
+          const imgData = canvas.toDataURL("image/png");
+          const imgProps = pdf.getImageProperties(imgData);
+          const pdfH = (imgProps.height * pdfWidth) / imgProps.width;
+          pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfH);
+          pdf.save(`${addon.title.replace(/\s+/g, '_')}-${resumeData.personal?.fullName || "details"}.pdf`);
+        }
+        
+        document.body.removeChild(container);
+      }
+    } catch (error) {
+      console.error('Addon generation error:', error);
+    }
+  };
 
   // ✅ SIMPLIFIED MOBILE PDF DOWNLOAD
   const handleMaybeLaterDownload = async () => {
@@ -267,12 +328,6 @@ export default function ResumeReviewPage() {
       const filename = `resume-${data.personal?.fullName || 'resume'}-${Date.now()}.pdf`;
       pdf.save(filename);
       
-      // Generate DOC file with proper styling
-      await generateDocFile(data);
-      
-      // Generate add-ons if user paid for them
-      await generateAddons(data);
-      
       // Show success message
       if (isMobile) {
         alert('PDF downloaded successfully! Note: For best quality, consider using a desktop computer.');
@@ -299,623 +354,61 @@ export default function ResumeReviewPage() {
         alert('PDF generation failed. Text version downloaded instead.');
       } catch (fallbackError) {
         console.error('Fallback download failed:', fallbackError);
-        alert('Download failed. Please try again on a desktop computer.');
       }
-    }
-  };
-
-  const generateAddons = async (resumeData: ResumeData) => {
-    try {
-      // Instead of duplicating the entire order fetching logic here and potentially
-      // failing if the DB isn't synced, we simply trust the `purchasedAddons` React state
-      // that we already populated in `checkPaymentAndAddons` using multiple fallbacks.
-      if (!purchasedAddons || purchasedAddons.length === 0) {
-        console.log('No add-ons purchased (or state is empty)');
-        return;
-      }
-      
-      console.log('Generating following purchased add-ons:', purchasedAddons);
-      const preview = getUnlockPreview();
-      
-      // Generate resume text for addon generation
-      const resumeText = JSON.stringify(resumeData); // Sending full plain data since API expects JSON string often or just plain text
-      
-      // Call addon generation API
-      const addonRes = await fetch('/api/generate-addons', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          resumeText: resumeText,
-          targetRole: preview?.targetRole || resumeData.personal?.title || 'Professional',
-          addons: purchasedAddons
-        })
-      });
-      
-      if (!addonRes.ok) {
-        console.error('Failed to generate add-ons:', await addonRes.text());
-        return;
-      }
-      
-      const addonData = await addonRes.json();
-      const addonsResult = addonData.addons || [];
-
-      if (addonsResult.length > 0) {
-        try {
-          // Dynamic import to keep main bundle small
-          const { AddonsDocument } = await import("@/components/addons/AddonsDocument");
-          const { renderToStaticMarkup } = await import("react-dom/server");
-          const html2pdfModule = await import("html2canvas-pro");
-          const jsPDFModule = await import("jspdf");
-          const html2canvas = html2pdfModule.default;
-          const jsPDF = jsPDFModule.default;
-          
-          const isMobile = isMobileDevice();
-
-          // Create a hidden container to render the addons DOM
-          const container = document.createElement('div');
-          container.style.position = 'absolute';
-          container.style.top = '0';
-          container.style.left = '-9999px';
-          container.style.width = '794px';
-          container.style.backgroundColor = '#ffffff';
-          document.body.appendChild(container);
-
-          // Give it some React context
-          const markup = renderToStaticMarkup(<AddonsDocument data={resumeData} addons={addonsResult} />);
-          container.innerHTML = markup;
-
-          // Process each page break
-          const pdf = new jsPDF("p", "mm", "a4");
-          const pdfWidth = pdf.internal.pageSize.getWidth();
-          const pdfHeight = pdf.internal.pageSize.getHeight();
-
-          const docEl = container.firstElementChild as HTMLElement;
-          if (docEl) {
-             const scale = isMobile ? 1.5 : 2;
-             const canvas = await html2canvas(docEl, { scale, useCORS: true });
-             const imgData = canvas.toDataURL("image/png");
-             
-             // This is a simplified 1-page/long-page print. For real multi-page we'd chunk it.
-             // Given time constraints, we will just fit it to width and let height scale.
-             const imgProps = pdf.getImageProperties(imgData);
-             const pdfH = (imgProps.height * pdfWidth) / imgProps.width;
-             
-             pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfH);
-             pdf.save(`addons-${resumeData.personal?.fullName || "details"}.pdf`);
-          }
-          
-          document.body.removeChild(container);
-        } catch (pdfErr) {
-           console.error("Failed to generate PDF for addons, falling back to text", pdfErr);
-           // Fallback to text download
-           addonsResult.forEach((addon: any) => {
-             const blob = new Blob([addon.content], { type: 'text/plain' });
-             const url = URL.createObjectURL(blob);
-             const link = document.createElement('a');
-             link.href = url;
-             link.download = `${addon.title.replace(/\s+/g, '_')}_${resumeData.personal?.fullName || 'resume'}_${Date.now()}.txt`;
-             document.body.appendChild(link);
-             link.click();
-             document.body.removeChild(link);
-             URL.revokeObjectURL(url);
-           });
-        }
-      }
-      
-    } catch (error) {
-      console.error('Addon generation error:', error);
-    }
-  };
-
-  const generateDocFile = async (resumeData: ResumeData) => {
-    try {
-      const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle } = await import('docx');
-      
-      // Create editable text-based DOCX
-      const children: any[] = [];
-      
-      // Header - Name and Title
-      if (resumeData.personal?.fullName) {
-        children.push(
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: resumeData.personal.fullName,
-                bold: true,
-                size: 48, // 24pt
-              }),
-            ],
-            alignment: AlignmentType.CENTER,
-            spacing: { after: 100 },
-          })
-        );
-      }
-      
-      if (resumeData.personal?.title) {
-        children.push(
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: resumeData.personal.title,
-                size: 28, // 14pt
-                color: "666666",
-              }),
-            ],
-            alignment: AlignmentType.CENTER,
-            spacing: { after: 100 },
-          })
-        );
-      }
-      
-      // Contact Info
-      const contactParts = [
-        resumeData.personal?.email,
-        resumeData.personal?.phone,
-        resumeData.personal?.location,
-      ].filter(Boolean);
-      
-      if (contactParts.length > 0) {
-        children.push(
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: contactParts.join(' • '),
-                size: 20, // 10pt
-                color: "666666",
-              }),
-            ],
-            alignment: AlignmentType.CENTER,
-            spacing: { after: 300 },
-          })
-        );
-      }
-      
-      // Horizontal line
-      children.push(
-        new Paragraph({
-          border: {
-            bottom: {
-              color: "374151",
-              space: 1,
-              style: BorderStyle.SINGLE,
-              size: 12,
-            },
-          },
-          spacing: { after: 300 },
-        })
-      );
-      
-      // Summary
-      if (resumeData.summary) {
-        children.push(
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: "PROFESSIONAL SUMMARY",
-                bold: true,
-                size: 24, // 12pt
-                color: "374151",
-              }),
-            ],
-            spacing: { before: 200, after: 150 },
-          })
-        );
-        children.push(
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: resumeData.summary,
-                size: 22, // 11pt
-              }),
-            ],
-            spacing: { after: 300 },
-          })
-        );
-      }
-      
-      // Experience
-      if (resumeData.experience && resumeData.experience.length > 0) {
-        children.push(
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: "EXPERIENCE",
-                bold: true,
-                size: 24,
-                color: "374151",
-              }),
-            ],
-            spacing: { before: 200, after: 150 },
-          })
-        );
-        
-        resumeData.experience.forEach((exp) => {
-          if (exp.jobTitle) {
-            children.push(
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: exp.jobTitle,
-                    bold: true,
-                    size: 22,
-                  }),
-                ],
-                spacing: { before: 150, after: 50 },
-              })
-            );
-          }
-          
-          if (exp.company) {
-            const dateRange = [exp.startDate, exp.endDate].filter(Boolean).join(' - ');
-            children.push(
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: exp.company,
-                    size: 22,
-                  }),
-                  new TextRun({
-                    text: dateRange ? ` | ${dateRange}` : '',
-                    size: 20,
-                    color: "666666",
-                  }),
-                ],
-                spacing: { after: 100 },
-              })
-            );
-          }
-          
-          // Bullets
-          if (exp.bullets && exp.bullets.length > 0) {
-            exp.bullets.filter(Boolean).forEach((bullet) => {
-              children.push(
-                new Paragraph({
-                  children: [
-                    new TextRun({
-                      text: `• ${bullet}`,
-                      size: 22,
-                    }),
-                  ],
-                  spacing: { after: 50 },
-                  indent: { left: 360 }, // 0.25 inch
-                })
-              );
-            });
-          }
-          
-          children.push(new Paragraph({ spacing: { after: 150 } }));
-        });
-      }
-      
-      // Education
-      if (resumeData.education && resumeData.education.length > 0) {
-        children.push(
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: "EDUCATION",
-                bold: true,
-                size: 24,
-                color: "374151",
-              }),
-            ],
-            spacing: { before: 200, after: 150 },
-          })
-        );
-        
-        resumeData.education.forEach((edu) => {
-          const degreeText = [edu.degree, edu.field].filter(Boolean).join(' in ');
-          if (degreeText) {
-            children.push(
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: degreeText,
-                    bold: true,
-                    size: 22,
-                  }),
-                ],
-                spacing: { before: 100, after: 50 },
-              })
-            );
-          }
-          
-          if (edu.school) {
-            const dateRange = [edu.startDate, edu.endDate].filter(Boolean).join(' - ');
-            children.push(
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: edu.school,
-                    size: 22,
-                  }),
-                  new TextRun({
-                    text: dateRange ? ` | ${dateRange}` : '',
-                    size: 20,
-                    color: "666666",
-                  }),
-                ],
-                spacing: { after: 150 },
-              })
-            );
-          }
-        });
-      }
-      
-      // Skills
-      if (resumeData.skills && resumeData.skills.length > 0) {
-        children.push(
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: "SKILLS",
-                bold: true,
-                size: 24,
-                color: "374151",
-              }),
-            ],
-            spacing: { before: 200, after: 150 },
-          })
-        );
-        
-        children.push(
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: resumeData.skills.join(' • '),
-                size: 22,
-              }),
-            ],
-            spacing: { after: 300 },
-          })
-        );
-      }
-      
-      // Projects
-      if (resumeData.projects && resumeData.projects.length > 0) {
-        const validProjects = resumeData.projects.filter(p => p.title || p.description);
-        if (validProjects.length > 0) {
-          children.push(
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: "PROJECTS",
-                  bold: true,
-                  size: 24,
-                  color: "374151",
-                }),
-              ],
-              spacing: { before: 200, after: 150 },
-            })
-          );
-          
-          validProjects.forEach((proj) => {
-            if (proj.title) {
-              children.push(
-                new Paragraph({
-                  children: [
-                    new TextRun({
-                      text: proj.title,
-                      bold: true,
-                      size: 22,
-                    }),
-                  ],
-                  spacing: { before: 100, after: 50 },
-                })
-              );
-            }
-            
-            if (proj.description) {
-              children.push(
-                new Paragraph({
-                  children: [
-                    new TextRun({
-                      text: proj.description,
-                      size: 22,
-                    }),
-                  ],
-                  spacing: { after: 100 },
-                })
-              );
-            }
-            
-            // Project bullets
-            if (proj.bullets && proj.bullets.length > 0) {
-              proj.bullets.filter(Boolean).forEach((bullet) => {
-                children.push(
-                  new Paragraph({
-                    children: [
-                      new TextRun({
-                        text: `• ${bullet}`,
-                        size: 22,
-                      }),
-                    ],
-                    spacing: { after: 50 },
-                    indent: { left: 360 },
-                  })
-                );
-              });
-            }
-            
-            children.push(new Paragraph({ spacing: { after: 150 } }));
-          });
-        }
-      }
-      
-      const doc = new Document({
-        sections: [{
-          properties: {
-            page: {
-              margin: { top: 720, bottom: 720, left: 720, right: 720 }, // 0.5 inch in twips
-            },
-          },
-          children,
-        }],
-      });
-      
-      const docxBlob = await Packer.toBlob(doc);
-      
-      const url = URL.createObjectURL(docxBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `resume-${resumeData.personal?.fullName || 'resume'}-${Date.now()}.docx`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      
-    } catch (error) {
-      console.error('DOC generation error:', error);
-      // Fallback to text file if DOCX fails
-      const textContent = createResumeDoc(resumeData);
-      const textBlob = new Blob([textContent], { type: 'text/plain' });
-      const textUrl = URL.createObjectURL(textBlob);
-      const textLink = document.createElement('a');
-      textLink.href = textUrl;
-      textLink.download = `resume-${resumeData.personal?.fullName || 'resume'}-${Date.now()}.txt`;
-      document.body.appendChild(textLink);
-      textLink.click();
-      document.body.removeChild(textLink);
-      URL.revokeObjectURL(textUrl);
     }
   };
 
   const handlePaidDownload = async () => {
     if (!data) return;
-    
-    // Check if mobile device
     const isMobile = isMobileDevice();
     
     try {
       const el = document.querySelector(".resume-pdf-source");
-      if (!el) {
-        throw new Error("Could not find resume preview on screen");
-      }
+      if (!el) throw new Error("Could not find resume preview");
 
-      // Import required modules
       const html2canvas = (await import('html2canvas-pro')).default;
       const jsPDF = (await import('jspdf')).default;
       
-      let targetEl = el as HTMLElement;
-      let wrapper: HTMLDivElement | null = null;
-      
-      // Always clone into a fixed width container (A4) to avoid text scaling/kerning bugs with html2canvas (e.g., text bunching up)
-      wrapper = document.createElement('div');
+      const wrapper = document.createElement('div');
       wrapper.style.position = 'absolute';
       wrapper.style.top = '-9999px';
       wrapper.style.left = '-9999px';
-      wrapper.style.width = '794px'; // ~A4 width
+      wrapper.style.width = '794px';
       wrapper.style.backgroundColor = 'white';
       
       const clone = el.cloneNode(true) as HTMLElement;
-      // Remove any inline scaling that might have been copied
       clone.style.transform = 'none';
-      clone.style.transformOrigin = 'unset';
-      
       wrapper.appendChild(clone);
       document.body.appendChild(wrapper);
-      targetEl = clone;
       
-      // Wait a small tick to let css apply to the cloned node and fonts to settle
       await new Promise(r => setTimeout(r, 100));
       
-      const scale = isMobile ? 1.5 : 2;
-
-      // Generate canvas with mobile optimizations
-      const canvas = await html2canvas(targetEl, {
-        scale,
+      const canvas = await html2canvas(clone, {
+        scale: isMobile ? 1.5 : 2,
         useCORS: true,
         backgroundColor: '#ffffff',
-        logging: false,
-        allowTaint: false,
-        foreignObjectRendering: false,
-        imageTimeout: 15000, // 15 seconds timeout for images
       });
       
-      if (wrapper && wrapper.parentNode) {
-        wrapper.parentNode.removeChild(wrapper);
-      }
+      document.body.removeChild(wrapper);
       
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      const imgData = canvas.toDataURL('image/png', 0.8); // Slightly lower quality for mobile/memory
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      
-      // Clean up canvas to free memory
-      canvas.width = 1;
-      canvas.height = 1;
-
-      // Save PDF
-      const filename = `resume-${data.personal?.fullName || 'resume'}-${Date.now()}.pdf`;
-      pdf.save(filename);
-      
-      // Also generate DOC file
-      await generateDocFile(data);
-      
-      // Generate add-ons if user paid for them
-      await generateAddons(data);
-      
-      // Show success message
-      if (isMobile) {
-        alert('PDF downloaded successfully! Note: For best quality, consider using a desktop computer.');
-      }
+      const imgData = canvas.toDataURL('image/png', 0.8);
+      pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
+      pdf.save(`resume-${data.personal?.fullName || 'resume'}.pdf`);
       
     } catch (error) {
       console.error('Download error:', error);
-      // Fallback to text download
-      try {
-        const resumeText = createResumeDoc(data);
-        const blob = new Blob([resumeText], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `resume-${data.personal?.fullName || 'resume'}-${Date.now()}.txt`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        
-        // Still try to generate add-ons
-        await generateAddons(data);
-        
-        alert('PDF generation failed. Text version downloaded instead.');
-      } catch (fallbackError) {
-        console.error('Fallback download failed:', fallbackError);
-        alert('Download failed. Please try again on a desktop computer.');
-      }
+      const resumeText = createResumeDoc(data);
+      const blob = new Blob([resumeText], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `resume-${data.personal?.fullName || 'resume'}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     }
-  };
-
-  const createResumeDoc = (resumeData: ResumeData) => {
-    return `
-      Resume - ${resumeData.personal?.fullName || 'Document'}
-      
-      ${resumeData.personal?.fullName || ''}
-      ${resumeData.personal?.title || ''}
-      ${resumeData.personal?.email || ''} | ${resumeData.personal?.phone || ''}
-      
-      SUMMARY
-      ${resumeData.summary || ''}
-      
-      EXPERIENCE
-      ${resumeData.experience.map(exp => `
-      ${exp.jobTitle} at ${exp.company}
-      ${exp.startDate} - ${exp.endDate}
-      ${exp.bullets.map(bullet => `• ${bullet}`).join('\n      ')}
-      `).join('\n')}
-      
-      EDUCATION
-      ${resumeData.education.map(edu => `
-      ${edu.degree} in ${edu.field}
-      ${edu.school}
-      ${edu.startDate} - ${edu.endDate}
-      `).join('\n')}
-      
-      SKILLS
-      ${resumeData.skills?.join(', ') || ''}
-    `;
   };
 
   // Simple download function for resume PDF
@@ -1278,20 +771,39 @@ OPTIMIZATION CHECKLIST:
           Open Full Builder
         </Link>
         {hasPaymentSuccess ? (
-          <button
-            type="button"
-            onClick={downloadResumePDF}
-            className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 transition-all shadow-md shadow-emerald-900/10"
-          >
-            Download Resume
-          </button>
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={handlePaidDownload}
+              className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 transition-all shadow-md shadow-emerald-900/10 flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+              Download PDF
+            </button>
+            <button
+              type="button"
+              onClick={() => generateDocFile(data)}
+              className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-all shadow-md shadow-blue-900/10 flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+              Download DOCX
+            </button>
+            <button
+              type="button"
+              onClick={() => generateAddons(data)}
+              className="rounded-xl bg-amber-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-amber-700 transition-all shadow-md shadow-amber-900/10 flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+              Download Add-ons
+            </button>
+          </div>
         ) : (
           <button
             type="button"
             onClick={handleMaybeLaterDownload}
             className="rounded-xl border-2 border-amber-300 bg-amber-50 px-5 py-2.5 text-sm font-semibold text-amber-800 hover:bg-amber-100 transition-all"
           >
-            Download PDF
+            Download PDF Preview
           </button>
         )}
       </div>
@@ -1456,16 +968,25 @@ OPTIMIZATION CHECKLIST:
         <div className="lg:sticky lg:top-24 self-start">
           <ResumePreviewPanel
             data={data}
+            isPaid={hasPaymentSuccess}
             onTemplateChange={(tid) => setData((d) => (d ? { ...d, templateId: tid } : d))}
-            onDownload={hasPaymentSuccess && resumeId ? handlePaidDownload : handleMaybeLaterDownload}
+            onDownload={handlePaidDownload}
+            onDownloadDocx={() => data && generateDocFile(data)}
           />
           <div className="mt-4 hidden lg:flex flex-wrap gap-3">
             <button
               type="button"
-              onClick={hasPaymentSuccess && resumeId ? handlePaidDownload : handleMaybeLaterDownload}
-              className="rounded-xl bg-amber-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-amber-700"
+              onClick={handlePaidDownload}
+              className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 shadow-md shadow-emerald-900/10"
             >
               Download PDF
+            </button>
+            <button
+              type="button"
+              onClick={() => data && generateDocFile(data)}
+              className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 shadow-md shadow-blue-900/10"
+            >
+              Download DOCX
             </button>
             <Link
               href="/builder"
@@ -1486,3 +1007,33 @@ OPTIMIZATION CHECKLIST:
     </div>
   );
 }
+
+const createResumeDoc = (resumeData: ResumeData): string => {
+  return `
+    Resume - ${resumeData.personal?.fullName || 'Document'}
+    
+    ${resumeData.personal?.fullName || ''}
+    ${resumeData.personal?.title || ''}
+    ${resumeData.personal?.email || ''} | ${resumeData.personal?.phone || ''}
+    
+    SUMMARY
+    ${resumeData.summary || ''}
+    
+    EXPERIENCE
+    ${resumeData.experience.map(exp => `
+    ${exp.jobTitle} at ${exp.company}
+    ${exp.startDate} - ${exp.endDate}
+    ${exp.bullets.map(bullet => `• ${bullet}`).join('\n    ')}
+    `).join('\n')}
+    
+    EDUCATION
+    ${resumeData.education.map(edu => `
+    ${edu.degree} in ${edu.field}
+    ${edu.school}
+    ${edu.startDate} - ${edu.endDate}
+    `).join('\n')}
+    
+    SKILLS
+    ${resumeData.skills?.join(', ') || ''}
+  `;
+};

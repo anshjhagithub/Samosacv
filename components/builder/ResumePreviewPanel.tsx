@@ -13,6 +13,7 @@ interface ResumePreviewPanelProps {
   data: ResumeData;
   onTemplateChange?: (templateId: TemplateId) => void;
   onDownload?: () => void;
+  onDownloadDocx?: () => void;
   toolbarExtra?: ReactNode;
   isPaid?: boolean;
   purchasedAddons?: FeatureSlug[];
@@ -27,7 +28,15 @@ const ADDON_LABELS: Record<string, string> = {
   interview_pack: "Interview Pack",
 };
 
-export function ResumePreviewPanel({ data, onTemplateChange, onDownload, toolbarExtra, isPaid = false, purchasedAddons = [] }: ResumePreviewPanelProps) {
+export function ResumePreviewPanel({ 
+  data, 
+  onTemplateChange, 
+  onDownload, 
+  onDownloadDocx,
+  toolbarExtra, 
+  isPaid = false, 
+  purchasedAddons = [] 
+}: ResumePreviewPanelProps) {
   const [zoom, setZoom] = useState(80);
   const [showTemplates, setShowTemplates] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -267,16 +276,30 @@ export function ResumePreviewPanel({ data, onTemplateChange, onDownload, toolbar
         <div className="flex items-center gap-2 flex-shrink-0">
           {toolbarExtra}
           {isPaid ? (
-            <button
-              type="button"
-              onClick={handleDownload}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm bg-amber-600 text-white hover:bg-amber-700 transition-all shadow-md"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-              </svg>
-              {purchasedAddons.length > 0 ? "Download Resume & Add-ons" : "Download resume"}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleDownload}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-xs bg-emerald-600 text-white hover:bg-emerald-700 transition-all shadow-md"
+                title={purchasedAddons.length > 0 ? "Download Resume & Add-ons" : "Download PDF"}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                </svg>
+                PDF
+              </button>
+              <button
+                type="button"
+                onClick={onDownloadDocx}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-xs bg-blue-600 text-white hover:bg-blue-700 transition-all shadow-md"
+                title="Download DOCX"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                DOCX
+              </button>
+            </div>
           ) : (
             <a
               href="#builder-checkout"
