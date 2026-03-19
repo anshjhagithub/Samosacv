@@ -980,13 +980,16 @@ export default function ResumeReviewPage() {
       const addonsResult = addonData.addons || [];
 
       if (addonsResult.length > 0) {
-        // Download each addon as a separate text file
+        // Download each addon as a separate text file with better naming
         addonsResult.forEach((addon: any) => {
+          const cleanTitle = addon.title.replace(/[^a-zA-Z0-9\s]/g, '').trim();
+          const fileName = `${cleanTitle}_${resumeData.personal?.fullName || 'resume'}_${Date.now()}.txt`;
+          
           const blob = new Blob([addon.content], { type: 'text/plain' });
           const url = URL.createObjectURL(blob);
           const link = document.createElement('a');
           link.href = url;
-          link.download = `${addon.title.replace(/\s+/g, '_')}_${resumeData.personal?.fullName || 'resume'}_${Date.now()}.txt`;
+          link.download = fileName;
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
@@ -1032,11 +1035,14 @@ export default function ResumeReviewPage() {
 
       if (addonsResult.length > 0) {
         const addon = addonsResult[0];
+        const cleanTitle = addon.title.replace(/[^a-zA-Z0-9\s]/g, '').trim();
+        const fileName = `${cleanTitle}_${resumeData.personal?.fullName || 'resume'}_${Date.now()}.txt`;
+        
         const blob = new Blob([addon.content], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `${addon.title.replace(/\s+/g, '_')}_${resumeData.personal?.fullName || 'resume'}_${Date.now()}.txt`;
+        link.download = fileName;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -1048,6 +1054,111 @@ export default function ResumeReviewPage() {
     } catch (error) {
       console.error('Addon generation error:', error);
       alert('Failed to generate add-on. Please try again.');
+    }
+  };
+
+  // Generate specific add-on types with custom handling
+  const generateAndDownloadLinkedInOptimizer = async (resumeData: ResumeData) => {
+    try {
+      const preview = getUnlockPreview();
+      
+      // Generate LinkedIn-optimized content
+      const linkedinContent = `
+LINKEDIN OPTIMIZED RESUME
+===========================
+
+${resumeData.personal?.fullName || ''}
+${resumeData.personal?.title || ''}
+${resumeData.personal?.email || ''} | ${resumeData.personal?.phone || ''} | ${resumeData.personal?.location || ''}
+
+PROFESSIONAL SUMMARY
+${resumeData.summary || ''}
+
+KEY SKILLS
+${(resumeData.skills || []).slice(0, 10).join(' • ')}
+
+EXPERIENCE
+${resumeData.experience?.map(exp => `
+${exp.jobTitle} at ${exp.company}
+${exp.startDate} - ${exp.endDate}
+${(exp.bullets || []).slice(0, 3).map(bullet => `• ${bullet}`).join('\n')}
+`).join('\n')}
+
+EDUCATION
+${resumeData.education?.map(edu => `
+${edu.degree} in ${edu.field}
+${edu.school}
+${edu.startDate} - ${edu.endDate}
+`).join('\n')}
+      `.trim();
+      
+      const blob = new Blob([linkedinContent], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `LinkedIn_Optimizer_${resumeData.personal?.fullName || 'resume'}_${Date.now()}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      alert('LinkedIn Optimizer downloaded successfully!');
+    } catch (error) {
+      console.error('LinkedIn optimizer error:', error);
+      alert('Failed to generate LinkedIn Optimizer. Please try again.');
+    }
+  };
+
+  const generateAndDownloadInterviewPrep = async (resumeData: ResumeData) => {
+    try {
+      const preview = getUnlockPreview();
+      
+      const interviewContent = `
+INTERVIEW PREPARATION GUIDE
+===========================
+
+Candidate: ${resumeData.personal?.fullName || ''}
+Target Role: ${preview?.targetRole || resumeData.personal?.title || 'Professional'}
+
+KEY ACHIEVEMENTS TO HIGHLIGHT
+${resumeData.experience?.map(exp => `
+At ${exp.company}:
+${(exp.bullets || []).slice(0, 2).map(bullet => `• ${bullet}`).join('\n')}
+`).join('\n')}
+
+TECHNICAL SKILLS TO EMPHASIZE
+${(resumeData.skills || []).slice(0, 15).join(' • ')}
+
+COMMON INTERVIEW QUESTIONS
+• Tell me about yourself
+• Why do you want to work here?
+• What are your strengths and weaknesses?
+• Describe a challenging project you worked on
+• How do you handle pressure/deadlines?
+
+STAR METHOD EXAMPLES
+${resumeData.experience?.slice(0, 2).map(exp => `
+Situation: ${exp.jobTitle} at ${exp.company}
+Task: ${exp.bullets?.[0] || 'Key responsibility'}
+Action: ${exp.bullets?.[1] || 'Action taken'}
+Result: ${exp.bullets?.[2] || 'Outcome achieved'}
+`).join('\n')}
+      `.trim();
+      
+      const blob = new Blob([interviewContent], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Interview_Prep_${resumeData.personal?.fullName || 'resume'}_${Date.now()}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      alert('Interview Preparation downloaded successfully!');
+    } catch (error) {
+      console.error('Interview prep error:', error);
+      alert('Failed to generate Interview Preparation. Please try again.');
     }
   };
 
@@ -1154,19 +1265,78 @@ export default function ResumeReviewPage() {
         <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
           <h3 className="text-sm font-semibold text-blue-900 mb-3">Download Individual Add-ons</h3>
           <div className="flex flex-wrap gap-2">
-            {purchasedAddons.map(addon => (
+            {purchasedAddons.includes('linkedin_optimizer') && (
               <button
-                key={addon}
                 type="button"
                 onClick={async () => {
                   if (!data) return;
-                  await generateAndDownloadSingleAddon(data, addon);
+                  await generateAndDownloadLinkedInOptimizer(data);
                 }}
                 className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 transition-all border border-blue-300 shadow-sm"
               >
-                Download {addon.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                Download LinkedIn Optimizer
               </button>
-            ))}
+            )}
+            {purchasedAddons.includes('interview_pack') && (
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!data) return;
+                  await generateAndDownloadInterviewPrep(data);
+                }}
+                className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 transition-all border border-blue-300 shadow-sm"
+              >
+                Download Interview Prep
+              </button>
+            )}
+            {purchasedAddons.includes('ats_improver') && (
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!data) return;
+                  await generateAndDownloadSingleAddon(data, 'ats_improver');
+                }}
+                className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 transition-all border border-blue-300 shadow-sm"
+              >
+                Download ATS Improver
+              </button>
+            )}
+            {purchasedAddons.includes('skill_roadmap') && (
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!data) return;
+                  await generateAndDownloadSingleAddon(data, 'skill_roadmap');
+                }}
+                className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 transition-all border border-blue-300 shadow-sm"
+              >
+                Download Skill Roadmap
+              </button>
+            )}
+            {purchasedAddons.includes('cover_letter') && (
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!data) return;
+                  await generateAndDownloadSingleAddon(data, 'cover_letter');
+                }}
+                className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 transition-all border border-blue-300 shadow-sm"
+              >
+                Download Cover Letter
+              </button>
+            )}
+            {purchasedAddons.includes('ats_breakdown') && (
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!data) return;
+                  await generateAndDownloadSingleAddon(data, 'ats_breakdown');
+                }}
+                className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 transition-all border border-blue-300 shadow-sm"
+              >
+                Download ATS Breakdown
+              </button>
+            )}
           </div>
         </div>
       )}
