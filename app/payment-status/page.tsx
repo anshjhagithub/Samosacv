@@ -131,7 +131,7 @@ function PaymentStatusContent() {
                       Download Resume
                     </Link>
                     <p className="text-[10px] text-stone-400 max-w-[200px] leading-tight mt-1">
-                      If downloading fails in this app, tap the three dots above and select "Open in Chrome".
+                      If downloading fails in this app, tap the three dots above and select &ldquo;Open in Chrome&rdquo;.
                     </p>
                   </div>
                 )}

@@ -59,28 +59,7 @@ export default function ResumeReviewPage() {
   const [error, setError] = useState<string | null>(null);
   const [purchasedAddons, setPurchasedAddons] = useState<string[]>([]);
 
-  useEffect(() => {
-    try {
-      const raw = loadResume();
-      setGenerated(getGeneratedResult());
-      setData(raw ? ensureProjects(raw) : null);
-      
-      // Try multiple sources to find the resumeId
-      const preview = getUnlockPreview();
-      const lsResumeId = typeof window !== 'undefined' ? localStorage.getItem('samosa_last_resume_id') : null;
-      const finalResumeId = preview?.resumeId || lsResumeId || null;
-      
-      if (finalResumeId) {
-        setResumeId(finalResumeId);
-        checkPaymentAndAddons(finalResumeId);
-      }
-    } catch (e: any) {
-      console.error("INIT ERROR:", e);
-      setError(e?.message || "Unknown error");
-    }
-  }, []);
-
-  const checkPaymentAndAddons = async (rid: string) => {
+  const checkPaymentAndAddons = useCallback(async (rid: string) => {
     try {
       // Step 1: Try to verify payment via the order_id if we have it
       const lsOrderId = typeof window !== 'undefined' ? localStorage.getItem('samosa_last_order_id') : null;
@@ -142,7 +121,28 @@ export default function ResumeReviewPage() {
       console.error("Payment status check failed:", error);
       setHasPaymentSuccess(false);
     }
-  };
+  }, [purchasedAddons.length]);
+
+  useEffect(() => {
+    try {
+      const raw = loadResume();
+      setGenerated(getGeneratedResult());
+      setData(raw ? ensureProjects(raw) : null);
+      
+      // Try multiple sources to find the resumeId
+      const preview = getUnlockPreview();
+      const lsResumeId = typeof window !== 'undefined' ? localStorage.getItem('samosa_last_resume_id') : null;
+      const finalResumeId = preview?.resumeId || lsResumeId || null;
+      
+      if (finalResumeId) {
+        setResumeId(finalResumeId);
+        checkPaymentAndAddons(finalResumeId);
+      }
+    } catch (e: any) {
+      console.error("INIT ERROR:", e);
+      setError(e?.message || "Unknown error");
+    }
+  }, [checkPaymentAndAddons]);
 
   const persist = useCallback((next: ResumeData) => {
     setData(next);
@@ -442,81 +442,347 @@ export default function ResumeReviewPage() {
 
   const generateDocFile = async (resumeData: ResumeData) => {
     try {
-      const el = document.querySelector(".resume-pdf-source");
-      if (!el) {
-        throw new Error("Could not find resume preview on screen to export DOC");
+      const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle } = await import('docx');
+      
+      // Create editable text-based DOCX
+      const children: any[] = [];
+      
+      // Header - Name and Title
+      if (resumeData.personal?.fullName) {
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: resumeData.personal.fullName,
+                bold: true,
+                size: 48, // 24pt
+              }),
+            ],
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 100 },
+          })
+        );
       }
       
-      const html2canvas = (await import('html2canvas-pro')).default;
-      const { Document, Packer, Paragraph, ImageRun, PageBreak } = await import('docx');
-      
-      const isMobile = isMobileDevice();
-      let targetEl = el as HTMLElement;
-      let wrapper: HTMLDivElement | null = null;
-      
-      // Always clone so html2canvas doesn't try to render scaled elements, causing squished text
-      wrapper = document.createElement('div');
-      wrapper.style.position = 'absolute';
-      wrapper.style.top = '-9999px';
-      wrapper.style.left = '-9999px';
-      wrapper.style.width = '794px';
-      wrapper.style.backgroundColor = 'white';
-      
-      const clone = el.cloneNode(true) as HTMLElement;
-      clone.style.transform = 'none';
-      clone.style.transformOrigin = 'unset';
-      
-      wrapper.appendChild(clone);
-      document.body.appendChild(wrapper);
-      targetEl = clone;
-      await new Promise(r => setTimeout(r, 100));
-      
-      const scale = isMobile ? 1.5 : 2;
-      const canvas = await html2canvas(targetEl, {
-        scale,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-        allowTaint: false,
-        foreignObjectRendering: false,
-        imageTimeout: 15000,
-      });
-      
-      if (wrapper && wrapper.parentNode) {
-        wrapper.parentNode.removeChild(wrapper);
+      if (resumeData.personal?.title) {
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: resumeData.personal.title,
+                size: 28, // 14pt
+                color: "666666",
+              }),
+            ],
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 100 },
+          })
+        );
       }
       
-      // Convert canvas to blob
-      const imgBlob: Blob = await new Promise((resolve) => {
-        canvas.toBlob((blob) => resolve(blob!), 'image/png');
-      });
-      const imgBuffer = await imgBlob.arrayBuffer();
+      // Contact Info
+      const contactParts = [
+        resumeData.personal?.email,
+        resumeData.personal?.phone,
+        resumeData.personal?.location,
+      ].filter(Boolean);
       
-      // A4 dimensions in EMUs (English Metric Units): 1 inch = 914400 EMUs
-      // A4 = 8.27 x 11.69 inches, with 0.5 inch margins = 7.27 x 10.69 inches
-      const pageWidthEmu = Math.round(7.27 * 914400);
-      const pageHeightEmu = Math.round(10.69 * 914400);
+      if (contactParts.length > 0) {
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: contactParts.join(' • '),
+                size: 20, // 10pt
+                color: "666666",
+              }),
+            ],
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 300 },
+          })
+        );
+      }
+      
+      // Horizontal line
+      children.push(
+        new Paragraph({
+          border: {
+            bottom: {
+              color: "374151",
+              space: 1,
+              style: BorderStyle.SINGLE,
+              size: 12,
+            },
+          },
+          spacing: { after: 300 },
+        })
+      );
+      
+      // Summary
+      if (resumeData.summary) {
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: "PROFESSIONAL SUMMARY",
+                bold: true,
+                size: 24, // 12pt
+                color: "374151",
+              }),
+            ],
+            spacing: { before: 200, after: 150 },
+          })
+        );
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: resumeData.summary,
+                size: 22, // 11pt
+              }),
+            ],
+            spacing: { after: 300 },
+          })
+        );
+      }
+      
+      // Experience
+      if (resumeData.experience && resumeData.experience.length > 0) {
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: "EXPERIENCE",
+                bold: true,
+                size: 24,
+                color: "374151",
+              }),
+            ],
+            spacing: { before: 200, after: 150 },
+          })
+        );
+        
+        resumeData.experience.forEach((exp) => {
+          if (exp.jobTitle) {
+            children.push(
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: exp.jobTitle,
+                    bold: true,
+                    size: 22,
+                  }),
+                ],
+                spacing: { before: 150, after: 50 },
+              })
+            );
+          }
+          
+          if (exp.company) {
+            const dateRange = [exp.startDate, exp.endDate].filter(Boolean).join(' - ');
+            children.push(
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: exp.company,
+                    size: 22,
+                  }),
+                  new TextRun({
+                    text: dateRange ? ` | ${dateRange}` : '',
+                    size: 20,
+                    color: "666666",
+                  }),
+                ],
+                spacing: { after: 100 },
+              })
+            );
+          }
+          
+          // Bullets
+          if (exp.bullets && exp.bullets.length > 0) {
+            exp.bullets.filter(Boolean).forEach((bullet) => {
+              children.push(
+                new Paragraph({
+                  children: [
+                    new TextRun({
+                      text: `• ${bullet}`,
+                      size: 22,
+                    }),
+                  ],
+                  spacing: { after: 50 },
+                  indent: { left: 360 }, // 0.25 inch
+                })
+              );
+            });
+          }
+          
+          children.push(new Paragraph({ spacing: { after: 150 } }));
+        });
+      }
+      
+      // Education
+      if (resumeData.education && resumeData.education.length > 0) {
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: "EDUCATION",
+                bold: true,
+                size: 24,
+                color: "374151",
+              }),
+            ],
+            spacing: { before: 200, after: 150 },
+          })
+        );
+        
+        resumeData.education.forEach((edu) => {
+          const degreeText = [edu.degree, edu.field].filter(Boolean).join(' in ');
+          if (degreeText) {
+            children.push(
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: degreeText,
+                    bold: true,
+                    size: 22,
+                  }),
+                ],
+                spacing: { before: 100, after: 50 },
+              })
+            );
+          }
+          
+          if (edu.school) {
+            const dateRange = [edu.startDate, edu.endDate].filter(Boolean).join(' - ');
+            children.push(
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: edu.school,
+                    size: 22,
+                  }),
+                  new TextRun({
+                    text: dateRange ? ` | ${dateRange}` : '',
+                    size: 20,
+                    color: "666666",
+                  }),
+                ],
+                spacing: { after: 150 },
+              })
+            );
+          }
+        });
+      }
+      
+      // Skills
+      if (resumeData.skills && resumeData.skills.length > 0) {
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: "SKILLS",
+                bold: true,
+                size: 24,
+                color: "374151",
+              }),
+            ],
+            spacing: { before: 200, after: 150 },
+          })
+        );
+        
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: resumeData.skills.join(' • '),
+                size: 22,
+              }),
+            ],
+            spacing: { after: 300 },
+          })
+        );
+      }
+      
+      // Projects
+      if (resumeData.projects && resumeData.projects.length > 0) {
+        const validProjects = resumeData.projects.filter(p => p.title || p.description);
+        if (validProjects.length > 0) {
+          children.push(
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "PROJECTS",
+                  bold: true,
+                  size: 24,
+                  color: "374151",
+                }),
+              ],
+              spacing: { before: 200, after: 150 },
+            })
+          );
+          
+          validProjects.forEach((proj) => {
+            if (proj.title) {
+              children.push(
+                new Paragraph({
+                  children: [
+                    new TextRun({
+                      text: proj.title,
+                      bold: true,
+                      size: 22,
+                    }),
+                  ],
+                  spacing: { before: 100, after: 50 },
+                })
+              );
+            }
+            
+            if (proj.description) {
+              children.push(
+                new Paragraph({
+                  children: [
+                    new TextRun({
+                      text: proj.description,
+                      size: 22,
+                    }),
+                  ],
+                  spacing: { after: 100 },
+                })
+              );
+            }
+            
+            // Project bullets
+            if (proj.bullets && proj.bullets.length > 0) {
+              proj.bullets.filter(Boolean).forEach((bullet) => {
+                children.push(
+                  new Paragraph({
+                    children: [
+                      new TextRun({
+                        text: `• ${bullet}`,
+                        size: 22,
+                      }),
+                    ],
+                    spacing: { after: 50 },
+                    indent: { left: 360 },
+                  })
+                );
+              });
+            }
+            
+            children.push(new Paragraph({ spacing: { after: 150 } }));
+          });
+        }
+      }
       
       const doc = new Document({
         sections: [{
           properties: {
             page: {
-              margin: { top: 457200, bottom: 457200, left: 457200, right: 457200 }, // 0.5 inch
-            }
+              margin: { top: 720, bottom: 720, left: 720, right: 720 }, // 0.5 inch in twips
+            },
           },
-          children: [
-            new Paragraph({
-              children: [
-                new ImageRun({
-                  data: imgBuffer,
-                  transformation: {
-                    width: pageWidthEmu / 914400 * 72, // convert to points for docx lib
-                    height: pageHeightEmu / 914400 * 72,
-                  },
-                }),
-              ],
-            }),
-          ],
+          children,
         }],
       });
       
@@ -530,10 +796,6 @@ export default function ResumeReviewPage() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      
-      // Clean up canvas
-      canvas.width = 1;
-      canvas.height = 1;
       
     } catch (error) {
       console.error('DOC generation error:', error);
@@ -689,6 +951,106 @@ export default function ResumeReviewPage() {
     `;
   };
 
+  // Generate and download all add-ons at once
+  const generateAndDownloadAddons = async (resumeData: ResumeData, addons: string[]) => {
+    try {
+      const preview = getUnlockPreview();
+      
+      // Generate resume text for addon generation
+      const resumeText = JSON.stringify(resumeData);
+      
+      // Call addon generation API
+      const addonRes = await fetch('/api/generate-addons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          resumeText: resumeText,
+          targetRole: preview?.targetRole || resumeData.personal?.title || 'Professional',
+          addons: addons
+        })
+      });
+      
+      if (!addonRes.ok) {
+        console.error('Failed to generate add-ons:', await addonRes.text());
+        alert('Failed to generate add-ons. Please try again.');
+        return;
+      }
+      
+      const addonData = await addonRes.json();
+      const addonsResult = addonData.addons || [];
+
+      if (addonsResult.length > 0) {
+        // Download each addon as a separate text file
+        addonsResult.forEach((addon: any) => {
+          const blob = new Blob([addon.content], { type: 'text/plain' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `${addon.title.replace(/\s+/g, '_')}_${resumeData.personal?.fullName || 'resume'}_${Date.now()}.txt`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        });
+        
+        alert(`Successfully downloaded ${addonsResult.length} add-on(s)!`);
+      }
+      
+    } catch (error) {
+      console.error('Addon generation error:', error);
+      alert('Failed to generate add-ons. Please try again.');
+    }
+  };
+
+  // Generate and download a single add-on
+  const generateAndDownloadSingleAddon = async (resumeData: ResumeData, addonSlug: string) => {
+    try {
+      const preview = getUnlockPreview();
+      
+      // Generate resume text for addon generation
+      const resumeText = JSON.stringify(resumeData);
+      
+      // Call addon generation API
+      const addonRes = await fetch('/api/generate-addons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          resumeText: resumeText,
+          targetRole: preview?.targetRole || resumeData.personal?.title || 'Professional',
+          addons: [addonSlug]
+        })
+      });
+      
+      if (!addonRes.ok) {
+        console.error('Failed to generate add-on:', await addonRes.text());
+        alert('Failed to generate add-on. Please try again.');
+        return;
+      }
+      
+      const addonData = await addonRes.json();
+      const addonsResult = addonData.addons || [];
+
+      if (addonsResult.length > 0) {
+        const addon = addonsResult[0];
+        const blob = new Blob([addon.content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${addon.title.replace(/\s+/g, '_')}_${resumeData.personal?.fullName || 'resume'}_${Date.now()}.txt`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        alert(`Successfully downloaded ${addon.title}!`);
+      }
+      
+    } catch (error) {
+      console.error('Addon generation error:', error);
+      alert('Failed to generate add-on. Please try again.');
+    }
+  };
+
   // ❌ SHOW ERROR IN UI (critical for mobile debugging)
   if (error) {
     return (
@@ -755,13 +1117,27 @@ export default function ResumeReviewPage() {
           Open Full Builder
         </Link>
         {hasPaymentSuccess && resumeId ? (
-          <button
-            type="button"
-            onClick={handlePaidDownload}
-            className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 transition-all shadow-md shadow-emerald-900/10"
-          >
-            Download Resume
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={handlePaidDownload}
+              className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 transition-all shadow-md shadow-emerald-900/10"
+            >
+              Download Resume PDF
+            </button>
+            {purchasedAddons.length > 0 && (
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!data) return;
+                  await generateAndDownloadAddons(data, purchasedAddons);
+                }}
+                className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-all shadow-md shadow-blue-900/10"
+              >
+                Download All Add-ons
+              </button>
+            )}
+          </>
         ) : (
           <button
             type="button"
@@ -772,6 +1148,28 @@ export default function ResumeReviewPage() {
           </button>
         )}
       </div>
+      
+      {/* Individual Add-on Download Buttons */}
+      {hasPaymentSuccess && purchasedAddons.length > 0 && (
+        <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
+          <h3 className="text-sm font-semibold text-blue-900 mb-3">Download Individual Add-ons</h3>
+          <div className="flex flex-wrap gap-2">
+            {purchasedAddons.map(addon => (
+              <button
+                key={addon}
+                type="button"
+                onClick={async () => {
+                  if (!data) return;
+                  await generateAndDownloadSingleAddon(data, addon);
+                }}
+                className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 transition-all border border-blue-300 shadow-sm"
+              >
+                Download {addon.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="space-y-6">
