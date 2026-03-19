@@ -1192,11 +1192,11 @@ SECTION ANALYSIS:
 • Skills: 8/10 ✓
 
 KEYWORD ANALYSIS:
-• Action Verbs Found: ${(resumeData.experience?.flatMap(exp => exp.bullets || []).filter(bullet => 
+• Action Verbs Found: ${resumeData.experience?.flatMap(exp => exp.bullets || []).filter(bullet => 
     ['Led', 'Developed', 'Managed', 'Created', 'Implemented', 'Achieved'].some(verb => 
       bullet.toLowerCase().includes(verb.toLowerCase())
     )).length || 0}
-• Quantified Achievements: ${(resumeData.experience?.flatMap(exp => exp.bullets || []).filter(bullet => 
+• Quantified Achievements: ${resumeData.experience?.flatMap(exp => exp.bullets || []).filter(bullet => 
       /\d+%|\d+ years|\$\d+/.test(bullet)
     ).length || 0}
 
@@ -1267,6 +1267,7 @@ OPTIMIZATION CHECKLIST:
             </p>
           </div>
         </div>
+      </div>
 
       {/* Actions bar - visible at top for mobile */}
       <div className="flex flex-wrap gap-3 mb-6">

@@ -1,0 +1,71 @@
+﻿
+> corporate-doc-creator@0.1.0 build
+> next build
+
+  Γû▓ Next.js 14.2.18
+  - Environments: .env
+
+   Creating an optimized production build ...
+node.exe : Failed to compile.
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" "C:\Us
+ers\anshj\AppData\Roaming\ 
+...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~
+    + CategoryInfo           
+   : NotSpecifi    ed: 
+(Failed to com    
+pile.:String) [],     
+RemoteException
+    + FullyQualifiedEr    
+rorId : NativeComm    
+andError
+ 
+
+./components/builder/ResumeBu
+ilder.tsx
+Error: 
+  [31mx[0m Unexpected 
+token `div`. Expected jsx 
+identifier
+     ,-[[36;1;4mD:\Resume bu
+ilder\components\builder\Resu
+meBuilder.tsx[0m:375:1]
+ [2m375[0m |   };
+ [2m376[0m | 
+ [2m377[0m |   return (
+ [2m378[0m |     <div 
+className="min-h-screen " 
+ref={containerRef}>
+     : [31;1m     ^^^[0m
+ [2m379[0m |       {/* Top 
+bar ΓÇô like big resume 
+builders */}
+ [2m380[0m |       <header 
+className="sticky top-0 z-30 
+border-b border-amber-900/5 
+bg-gradient-to-b 
+from-amber-50/98 to-white/95 
+backdrop-blur-xl">
+ [2m381[0m |         <div 
+className="max-w-[1800px] 
+mx-auto px-4 sm:px-6 py-3 
+flex items-center 
+justify-between gap-4">
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested 
+module:
+./components/builder/ResumeBu
+ilder.tsx
+./app/builder/page.tsx
+
+
+> Build failed because of 
+webpack errors

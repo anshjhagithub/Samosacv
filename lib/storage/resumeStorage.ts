@@ -12,6 +12,8 @@ export interface UnlockPreview {
   atsScore: number;
   missingSkills: string[];
   targetRole?: string;
+  customerPhone?: string;
+  customerEmail?: string;
 }
 
 export function loadResume(): ResumeData | null {

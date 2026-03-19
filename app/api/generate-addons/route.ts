@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { generateText } from "ai";
 import { mistral } from "@ai-sdk/mistral";
 import { ADDON_SLUGS, type FeatureSlug } from "@/lib/pricing";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export const maxDuration = 60; // AI generation might take a while
 

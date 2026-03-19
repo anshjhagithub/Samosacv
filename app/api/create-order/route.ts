@@ -1,14 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import crypto from "crypto";
-
-// Force dynamic rendering
-export const dynamic = 'force-dynamic';
-
-const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 const FEATURE_PRICING: Record<string, number> = {
   resume_pdf: 15,

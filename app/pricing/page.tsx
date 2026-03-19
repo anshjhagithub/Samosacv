@@ -93,7 +93,7 @@ export default function PricingPage() {
 
         {/* Simple features */}
         <section className="mb-12">
-          <h2 className="text-xl font-bold text-stone-900 mb-1">What's included</h2>
+          <h2 className="text-xl font-bold text-stone-900 mb-1">What&apos;s included</h2>
           <p className="text-stone-500 text-sm mb-6">Everything you need for a professional resume.</p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {[

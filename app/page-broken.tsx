@@ -244,7 +244,7 @@ export default function Home() {
             <div className="absolute top-1/2 left-1/2 w-[400px] h-[400px] bg-gradient-to-r from-emerald-200/10 to-sky-200/10 rounded-full blur-3xl" />
             
             {/* Subtle grid pattern */}
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="%239CA3AF" fill-opacity="0.03"%3E%3Cpath d="M0 40L40 0H20L0 20M40 40V20L20 40"/%3E%3C/g%3E%3C/svg%3E')] opacity-30" />
+            <div className={`absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="%239CA3AF" fill-opacity="0.03"%3E%3Cpath d="M0 40L40 0H20L0 20M40 40V20L20 40"/%3E%3C/g%3E%3C/svg%3E')] opacity-30`} />
           </div>
 
           <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-20">
@@ -462,7 +462,7 @@ export default function Home() {
                 <span className="bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent"> Build Your Career</span>
               </h2>
               <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-                Join thousands who've transformed their job search with our AI-powered approach
+                Join thousands who&apos;ve transformed their job search with our AI-powered approach
               </p>
             </motion.div>
 
@@ -598,7 +598,7 @@ export default function Home() {
                       </h3>
                       
                       <p className="text-slate-600 leading-relaxed">
-                        Trained on 27,000+ real resumes from top companies. Understands your industry's language.
+                        Trained on 27,000+ real resumes from top companies. Understands your industry&apos;s language.
                       </p>
                       
                       <div className="space-y-2">
@@ -683,14 +683,6 @@ export default function Home() {
                   </div>
                 </motion.div>
               ))}
-            </div>
-          </div>
-        </section>
-                      ))}
-                    </div>
-                  </div>
-                </TiltCard>
-              </motion.div>
             </div>
           </div>
         </section>
@@ -1156,7 +1148,7 @@ export default function Home() {
 
                     {/* Testimonial */}
                     <p className="text-slate-700 leading-relaxed mb-6 text-sm">
-                      "{t.quote}"
+                      &quot;{t.quote}&quot;
                     </p>
 
                     {/* Author */}

@@ -1013,6 +1013,8 @@ export function ResumeBuilder({ data, onUpdate }: ResumeBuilderProps) {
                 )}
               </div>
             </section>
+          );
+        })()}
 
             {/* New: Free Tools Showcase */}
             <motion.section 
@@ -1101,7 +1103,7 @@ export function ResumeBuilder({ data, onUpdate }: ResumeBuilderProps) {
                   >
                     <div className="flex items-center gap-2 mb-3">
                       <motion.div 
-                        className="w-8 h-8 rounded-lg bg-white border border-${tool.color}-300 flex items-center justify-center"
+                        className={`w-8 h-8 rounded-lg bg-white border border-${tool.color}-300 flex items-center justify-center`}
                         whileHover={{ rotate: 360 }}
                         transition={{ duration: 0.6 }}
                       >
@@ -1127,7 +1129,7 @@ export function ResumeBuilder({ data, onUpdate }: ResumeBuilderProps) {
                       ))}
                     </div>
                     <motion.div 
-                      className="mt-3 pt-3 border-t border-${tool.color}-200"
+                      className={`mt-3 pt-3 border-t border-${tool.color}-200`}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ duration: 0.5, delay: tool.delay + 0.4 }}

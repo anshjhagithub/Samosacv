@@ -33,27 +33,48 @@ export default function UnlockPage() {
     }
   }, [router]);
 
-  const handlePurchase = async () => {
+  const handlePurchase = async (mobile?: string) => {
     if (!data || !preview) return;
     
     setLoading(true);
     try {
-      const result = await openCashfreeCheckout({
-        orderId: preview.orderId,
-        customerPhone: preview.customerPhone || "",
-        customerEmail: preview.customerEmail || "",
-        amount: FEATURE_PRICING.resume_pdf * 100, // Convert to paise
-        resumeId: preview.resumeId,
-        items: { resume_pdf: true }
+      // Load addon cart from localStorage if any
+      let cart: Record<string, boolean> = { resume_pdf: true };
+      if (typeof window !== 'undefined') {
+        try {
+          const saved = localStorage.getItem('samosa_builder_addon_cart');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            cart = { ...cart, ...parsed };
+          }
+        } catch {}
+      }
+
+      const res = await fetch("/api/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cart,
+          resumeId: preview.resumeId,
+          mobileNumber: mobile || preview.customerPhone,
+        }),
       });
 
-      if (result.success) {
-        // Payment successful, redirect to review
-        router.push("/resume/review");
-      } else if (result.requiresMobile) {
-        setShowMobileModal(true);
+      const j = await res.json();
+      if (!res.ok) {
+        // If the error indicates missing mobile number, show modal
+        if (j.error?.toLowerCase().includes("phone") || j.error?.toLowerCase().includes("mobile")) {
+          setShowMobileModal(true);
+          return;
+        }
+        throw new Error(j.error || "Failed to create order");
+      }
+
+      if (j.payment_session_id) {
+        await openCashfreeCheckout(j.payment_session_id);
+        // After checkout is opened, it will redirect via return_url in cashfree
       } else {
-        alert("Payment failed. Please try again.");
+        throw new Error("No payment session received");
       }
     } catch (error) {
       console.error("Payment error:", error);
@@ -147,7 +168,7 @@ export default function UnlockPage() {
             </div>
 
             <button
-              onClick={handlePurchase}
+              onClick={() => handlePurchase()}
               disabled={loading}
               className="w-full bg-amber-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-amber-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -163,17 +184,18 @@ export default function UnlockPage() {
         </div>
       </main>
 
-      {/* Mobile Number Modal */}
       <AnimatePresence>
         {showMobileModal && (
           <MobileNumberModal
+            isOpen={showMobileModal}
+            isLoading={loading}
             onClose={() => setShowMobileModal(false)}
-            onSubmit={async (phone: string) => {
+            onConfirm={async (phone: string) => {
               setShowMobileModal(false);
               const updatedPreview = { ...preview, customerPhone: phone };
               setUnlockPreview(updatedPreview);
               setPreview(updatedPreview);
-              await handlePurchase();
+              await handlePurchase(phone);
             }}
           />
         )}

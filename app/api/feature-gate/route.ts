@@ -1,23 +1,13 @@
 import { NextResponse } from "next/server";
-import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { checkAccess } from "@/lib/featureGate";
 import type { FeatureSlug } from "@/lib/pricing";
 import { getGuestUserId } from "@/lib/guestUser";
-
-function getSupabaseAdmin() {
-  const url = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL)?.trim();
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-  if (!url || !key) return null;
-  return createAdminClient(url, key);
-}
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export async function GET(request: Request) {
   try {
     const userId = await getGuestUserId();
-    const admin = getSupabaseAdmin();
-    if (!admin) {
-      return NextResponse.json({ granted: false, error: "Server config error" }, { status: 500 });
-    }
+    const admin = supabaseAdmin;
 
     const { searchParams } = new URL(request.url);
     const resumeId = searchParams.get("resumeId") || null;
@@ -37,7 +27,7 @@ export async function GET(request: Request) {
         
       if (orders && orders.length > 0) {
         const addonSet = new Set<string>();
-        orders.forEach(order => {
+        orders.forEach((order: any) => {
           if (order.line_items && typeof order.line_items === 'object') {
             Object.keys(order.line_items).forEach(k => {
               if (order.line_items[k] === true && k !== 'resume_pdf' && k !== 'mock_interview_live' && k !== 'resume_regeneration') {
