@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
 
-// Use the correct environment variables for Supabase admin access
+// Initialize Supabase client with fallback environment variables
 const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
@@ -13,17 +13,22 @@ export async function POST(req: Request) {
     const body = await req.text();
     const signature = req.headers.get("x-webhook-signature") || "";
 
-    const expectedSignature = crypto
-      .createHmac("sha256", process.env.CASHFREE_SECRET_KEY!)
-      .update(body)
-      .digest("base64");
+    // Only verify signature if secret key is available
+    if (process.env.CASHFREE_SECRET_KEY) {
+      const expectedSignature = crypto
+        .createHmac("sha256", process.env.CASHFREE_SECRET_KEY!)
+        .update(body)
+        .digest("base64");
 
-    if (signature && signature !== expectedSignature) {
-      console.error("Invalid webhook signature");
-      return NextResponse.json(
-        { error: "Invalid signature" },
-        { status: 401 }
-      );
+      if (signature && signature !== expectedSignature) {
+        console.error("Invalid webhook signature");
+        return NextResponse.json(
+          { error: "Invalid signature" },
+          { status: 401 }
+        );
+      }
+    } else {
+      console.warn("CASHFREE_SECRET_KEY not configured - skipping signature verification");
     }
 
     const data = JSON.parse(body);
