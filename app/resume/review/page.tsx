@@ -57,95 +57,38 @@ export default function ResumeReviewPage() {
   const [hasPaymentSuccess, setHasPaymentSuccess] = useState(false);
   const [resumeId, setResumeId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [purchasedAddons, setPurchasedAddons] = useState<string[]>([]);
 
-  const checkPaymentAndAddons = useCallback(async (rid: string) => {
+  const checkPaymentStatus = useCallback(async (rid: string) => {
     try {
-      console.log("🔍 Checking payment and addons for resume:", rid);
-      
-      // Step 1: Try to verify payment via the order_id if we have it
+      // Simple check if user has paid for resume download
       const lsOrderId = typeof window !== 'undefined' ? localStorage.getItem('samosa_last_order_id') : null;
-      console.log("📋 LocalStorage order_id:", lsOrderId);
       
       if (lsOrderId) {
-        // Force-verify with Cashfree to sync DB
         try {
           const verifyRes = await fetch('/api/verify-payment', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ orderId: lsOrderId }),
           });
-          console.log("💳 Verify payment response:", verifyRes.status);
-        } catch (e) {
-          console.error("❌ Verify payment failed:", e);
-        }
-      }
-      
-      // Step 2: Check if the order is paid in DB
-      const downloadRes = await fetch(`/api/resume/download?resume_id=${rid}`);
-      console.log("📥 Download API response:", downloadRes.status);
-      
-      if (downloadRes.ok) {
-        setHasPaymentSuccess(true);
-        console.log("✅ Payment success detected");
-        
-        // Step 3: Fetch addons from the order
-        try {
-          const orderRes = await fetch(`/api/get-order?resume_id=${rid}`);
-          console.log("📦 Get order API response:", orderRes.status);
           
-          if (orderRes.ok) {
-            const orderData = await orderRes.json();
-            console.log("📋 Order data:", orderData);
-            
-            const lineItems = orderData.line_items || {};
-            console.log("🛍️ Line items:", lineItems);
-            
-            const addons = Object.entries(lineItems)
-              .filter(([slug, purchased]) => purchased === true && slug !== 'resume_pdf')
-              .map(([slug]) => slug);
-            console.log("🎯 Extracted addons:", addons);
-            
-            setPurchasedAddons(addons);
-          } else {
-            const errorText = await orderRes.text();
-            console.error("❌ Get order failed:", orderRes.status, errorText);
+          if (verifyRes.ok) {
+            const verifyData = await verifyRes.json();
+            if (verifyData.verified) {
+              setHasPaymentSuccess(true);
+              return;
+            }
           }
         } catch (e) {
-          console.error("❌ Failed to fetch addons:", e);
+          console.error("Payment verification failed:", e);
         }
-        
-        // Also check localStorage cart as backup
-        if (purchasedAddons.length === 0) {
-          try {
-            const cartStr = typeof window !== 'undefined' ? localStorage.getItem('samosa_last_cart') : null;
-            console.log("🛒 LocalStorage cart:", cartStr);
-            
-            if (cartStr) {
-              const cart = JSON.parse(cartStr);
-              const addons = Object.entries(cart)
-                .filter(([slug, purchased]) => purchased === true && slug !== 'resume_pdf')
-                .map(([slug]) => slug);
-              console.log("🎯 Cart addons:", addons);
-              
-              if (addons.length > 0) {
-                setPurchasedAddons(addons);
-              }
-            }
-          } catch (e) {
-            console.error("❌ Failed to parse cart:", e);
-          }
-        }
-      } else {
-        const errorText = await downloadRes.text();
-        console.error("❌ Download API failed:", downloadRes.status, errorText);
-        setHasPaymentSuccess(false);
       }
+      
+      setHasPaymentSuccess(false);
     } catch (error) {
-      console.error("❌ Check payment error:", error);
+      console.error("Check payment error:", error);
       setHasPaymentSuccess(false);
     }
-  }, [purchasedAddons.length]);
+  }, []);
 
   useEffect(() => {
     try {
@@ -160,13 +103,13 @@ export default function ResumeReviewPage() {
       
       if (finalResumeId) {
         setResumeId(finalResumeId);
-        checkPaymentAndAddons(finalResumeId);
+        checkPaymentStatus(finalResumeId);
       }
     } catch (e: any) {
       console.error("INIT ERROR:", e);
       setError(e?.message || "Unknown error");
     }
-  }, [checkPaymentAndAddons]);
+  }, [checkPaymentStatus]);
 
   const persist = useCallback((next: ResumeData) => {
     setData(next);
@@ -971,230 +914,63 @@ export default function ResumeReviewPage() {
       `).join('\n')}
       
       SKILLS
-      ${(resumeData.skills || []).join(', ')}
+      ${resumeData.skills?.join(', ') || ''}
     `;
   };
 
-  // Generate and download all add-ons at once
-  const generateAndDownloadAddons = async (resumeData: ResumeData, addons: string[]) => {
+  // Simple download function for resume PDF
+  const downloadResumePDF = async () => {
     try {
-      const preview = getUnlockPreview();
-      
-      // Generate resume text for addon generation
-      const resumeText = JSON.stringify(resumeData);
-      
-      // Call addon generation API
-      const addonRes = await fetch('/api/generate-addons', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          resumeText: resumeText,
-          targetRole: preview?.targetRole || resumeData.personal?.title || 'Professional',
-          addons: addons
-        })
-      });
-      
-      if (!addonRes.ok) {
-        console.error('Failed to generate add-ons:', await addonRes.text());
-        alert('Failed to generate add-ons. Please try again.');
+      if (!data) {
+        alert('No resume data available');
         return;
       }
-      
-      const addonData = await addonRes.json();
-      const addonsResult = addonData.addons || [];
 
-      if (addonsResult.length > 0) {
-        // Download each addon as a separate text file with better naming
-        addonsResult.forEach((addon: any) => {
-          const cleanTitle = addon.title.replace(/[^a-zA-Z0-9\s]/g, '').trim();
-          const fileName = `${cleanTitle}_${resumeData.personal?.fullName || 'resume'}_${Date.now()}.txt`;
-          
-          const blob = new Blob([addon.content], { type: 'text/plain' });
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = fileName;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-        });
-        
-        alert(`Successfully downloaded ${addonsResult.length} add-on(s)!`);
-      }
-      
-    } catch (error) {
-      console.error('Addon generation error:', error);
-      alert('Failed to generate add-ons. Please try again.');
-    }
-  };
+      // Create a simple text version of the resume for download
+      const resumeText = `
+RESUME - ${data.personal?.fullName || 'Unknown'}
+=====================================
 
-  // Generate and download a single add-on
-  const generateAndDownloadSingleAddon = async (resumeData: ResumeData, addonSlug: string) => {
-    try {
-      const preview = getUnlockPreview();
-      
-      // Generate resume text for addon generation
-      const resumeText = JSON.stringify(resumeData);
-      
-      // Call addon generation API
-      const addonRes = await fetch('/api/generate-addons', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          resumeText: resumeText,
-          targetRole: preview?.targetRole || resumeData.personal?.title || 'Professional',
-          addons: [addonSlug]
-        })
-      });
-      
-      if (!addonRes.ok) {
-        console.error('Failed to generate add-on:', await addonRes.text());
-        alert('Failed to generate add-on. Please try again.');
-        return;
-      }
-      
-      const addonData = await addonRes.json();
-      const addonsResult = addonData.addons || [];
-
-      if (addonsResult.length > 0) {
-        const addon = addonsResult[0];
-        const cleanTitle = addon.title.replace(/[^a-zA-Z0-9\s]/g, '').trim();
-        const fileName = `${cleanTitle}_${resumeData.personal?.fullName || 'resume'}_${Date.now()}.txt`;
-        
-        const blob = new Blob([addon.content], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        
-        alert(`Successfully downloaded ${addon.title}!`);
-      }
-      
-    } catch (error) {
-      console.error('Addon generation error:', error);
-      alert('Failed to generate add-on. Please try again.');
-    }
-  };
-
-  // Generate specific add-on types with custom handling
-  const generateAndDownloadLinkedInOptimizer = async (resumeData: ResumeData) => {
-    try {
-      const preview = getUnlockPreview();
-      
-      // Generate LinkedIn-optimized content
-      const linkedinContent = `
-LINKEDIN OPTIMIZED RESUME
-===========================
-
-${resumeData.personal?.fullName || ''}
-${resumeData.personal?.title || ''}
-${resumeData.personal?.email || ''} | ${resumeData.personal?.phone || ''} | ${resumeData.personal?.location || ''}
+${data.personal?.fullName || ''}
+${data.personal?.title || ''}
+${data.personal?.email || ''} | ${data.personal?.phone || ''} | ${data.personal?.location || ''}
 
 PROFESSIONAL SUMMARY
-${resumeData.summary || ''}
-
-KEY SKILLS
-${(resumeData.skills || []).slice(0, 10).join(' • ')}
+${data.summary || ''}
 
 EXPERIENCE
-${resumeData.experience?.map(exp => `
+${data.experience?.map(exp => `
 ${exp.jobTitle} at ${exp.company}
 ${exp.startDate} - ${exp.endDate}
-${(exp.bullets || []).slice(0, 3).map(bullet => `• ${bullet}`).join('\n')}
+${exp.bullets?.map(bullet => `• ${bullet}`).join('\n') || ''}
 `).join('\n')}
 
 EDUCATION
-${resumeData.education?.map(edu => `
+${data.education?.map(edu => `
 ${edu.degree} in ${edu.field}
 ${edu.school}
 ${edu.startDate} - ${edu.endDate}
 `).join('\n')}
+
+SKILLS
+${data.skills?.join(', ') || ''}
       `.trim();
-      
-      const blob = new Blob([linkedinContent], { type: 'text/plain' });
+
+      const blob = new Blob([resumeText], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `LinkedIn_Optimizer_${resumeData.personal?.fullName || 'resume'}_${Date.now()}.txt`;
+      link.download = `Resume_${data.personal?.fullName || 'document'}_${Date.now()}.txt`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
       
-      alert('LinkedIn Optimizer downloaded successfully!');
     } catch (error) {
-      console.error('LinkedIn optimizer error:', error);
-      alert('Failed to generate LinkedIn Optimizer. Please try again.');
+      console.error('Download error:', error);
+      alert('Failed to download resume. Please try again.');
     }
   };
-
-  const generateAndDownloadInterviewPrep = async (resumeData: ResumeData) => {
-    try {
-      const preview = getUnlockPreview();
-      
-      const interviewContent = `
-INTERVIEW PREPARATION GUIDE
-===========================
-
-Candidate: ${resumeData.personal?.fullName || ''}
-Target Role: ${preview?.targetRole || resumeData.personal?.title || 'Professional'}
-
-KEY ACHIEVEMENTS TO HIGHLIGHT
-${resumeData.experience?.map(exp => `
-At ${exp.company}:
-${(exp.bullets || []).slice(0, 2).map(bullet => `• ${bullet}`).join('\n')}
-`).join('\n')}
-
-TECHNICAL SKILLS TO EMPHASIZE
-${(resumeData.skills || []).slice(0, 15).join(' • ')}
-
-COMMON INTERVIEW QUESTIONS
-• Tell me about yourself
-• Why do you want to work here?
-• What are your strengths and weaknesses?
-• Describe a challenging project you worked on
-• How do you handle pressure/deadlines?
-
-STAR METHOD EXAMPLES
-${resumeData.experience?.slice(0, 2).map(exp => `
-Situation: ${exp.jobTitle} at ${exp.company}
-Task: ${exp.bullets?.[0] || 'Key responsibility'}
-Action: ${exp.bullets?.[1] || 'Action taken'}
-Result: ${exp.bullets?.[2] || 'Outcome achieved'}
-`).join('\n')}
-      `.trim();
-      
-      const blob = new Blob([interviewContent], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `Interview_Prep_${resumeData.personal?.fullName || 'resume'}_${Date.now()}.txt`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      
-      alert('Interview Preparation downloaded successfully!');
-    } catch (error) {
-      console.error('Interview prep error:', error);
-      alert('Failed to generate Interview Preparation. Please try again.');
-    }
-  };
-
-  // ❌ SHOW ERROR IN UI (critical for mobile debugging)
-  if (error) {
-    return (
-      <div className="p-6 text-red-600">
-        <h2 className="font-bold">Error:</h2>
-        <pre>{error}</pre>
-      </div>
-    );
-  }
 
   if (data === null) {
     return (
@@ -1222,26 +998,6 @@ Result: ${exp.bullets?.[2] || 'Outcome achieved'}
             </p>
           </div>
         </div>
-        {displayAtsScore < 90 && (
-          <p className="text-sm text-stone-500">
-            Scores below 90 are often rejected by ATS. Use &ldquo;Optimize for ATS&rdquo; or unlock ATS Improver (&#8377;15).
-          </p>
-        )}
-        
-        {purchasedAddons.length > 0 && (
-          <div className="w-full mt-3 pt-3 border-t border-stone-100">
-            <span className="text-xs text-stone-500 uppercase tracking-wider block mb-2">Purchased Add-ons</span>
-            <div className="flex gap-2 flex-wrap">
-              {purchasedAddons.map(addon => (
-                <span key={addon} className="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-semibold capitalize border border-emerald-200 shadow-sm">
-                  {addon.replace(/_/g, ' ')}
-                </span>
-              ))}
-            </div>
-            <p className="text-xs text-stone-500 mt-2">These will be automatically generated and included when you download your resume.</p>
-          </div>
-        )}
-      </div>
 
       {/* Actions bar - visible at top for mobile */}
       <div className="flex flex-wrap gap-3 mb-6">
@@ -1251,28 +1007,14 @@ Result: ${exp.bullets?.[2] || 'Outcome achieved'}
         >
           Open Full Builder
         </Link>
-        {hasPaymentSuccess && resumeId ? (
-          <>
-            <button
-              type="button"
-              onClick={handlePaidDownload}
-              className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 transition-all shadow-md shadow-emerald-900/10"
-            >
-              Download Resume PDF
-            </button>
-            {purchasedAddons.length > 0 && (
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!data) return;
-                  await generateAndDownloadAddons(data, purchasedAddons);
-                }}
-                className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-all shadow-md shadow-blue-900/10"
-              >
-                Download All Add-ons
-              </button>
-            )}
-          </>
+        {hasPaymentSuccess ? (
+          <button
+            type="button"
+            onClick={downloadResumePDF}
+            className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 transition-all shadow-md shadow-emerald-900/10"
+          >
+            Download Resume
+          </button>
         ) : (
           <button
             type="button"
@@ -1283,87 +1025,6 @@ Result: ${exp.bullets?.[2] || 'Outcome achieved'}
           </button>
         )}
       </div>
-      
-      {/* Individual Add-on Download Buttons */}
-      {hasPaymentSuccess && purchasedAddons.length > 0 && (
-        <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
-          <h3 className="text-sm font-semibold text-blue-900 mb-3">Download Individual Add-ons</h3>
-          <div className="flex flex-wrap gap-2">
-            {purchasedAddons.includes('linkedin_optimizer') && (
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!data) return;
-                  await generateAndDownloadLinkedInOptimizer(data);
-                }}
-                className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 transition-all border border-blue-300 shadow-sm"
-              >
-                Download LinkedIn Optimizer
-              </button>
-            )}
-            {purchasedAddons.includes('interview_pack') && (
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!data) return;
-                  await generateAndDownloadInterviewPrep(data);
-                }}
-                className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 transition-all border border-blue-300 shadow-sm"
-              >
-                Download Interview Prep
-              </button>
-            )}
-            {purchasedAddons.includes('ats_improver') && (
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!data) return;
-                  await generateAndDownloadSingleAddon(data, 'ats_improver');
-                }}
-                className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 transition-all border border-blue-300 shadow-sm"
-              >
-                Download ATS Improver
-              </button>
-            )}
-            {purchasedAddons.includes('skill_roadmap') && (
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!data) return;
-                  await generateAndDownloadSingleAddon(data, 'skill_roadmap');
-                }}
-                className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 transition-all border border-blue-300 shadow-sm"
-              >
-                Download Skill Roadmap
-              </button>
-            )}
-            {purchasedAddons.includes('cover_letter') && (
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!data) return;
-                  await generateAndDownloadSingleAddon(data, 'cover_letter');
-                }}
-                className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 transition-all border border-blue-300 shadow-sm"
-              >
-                Download Cover Letter
-              </button>
-            )}
-            {purchasedAddons.includes('ats_breakdown') && (
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!data) return;
-                  await generateAndDownloadSingleAddon(data, 'ats_breakdown');
-                }}
-                className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 transition-all border border-blue-300 shadow-sm"
-              >
-                Download ATS Breakdown
-              </button>
-            )}
-          </div>
-        </div>
-      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="space-y-6">
