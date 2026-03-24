@@ -419,45 +419,243 @@ export default function ResumeReviewPage() {
         return;
       }
 
-      // Create a simple text version of the resume for download
-      const resumeText = `
-RESUME - ${data.personal?.fullName || 'Unknown'}
-=====================================
+      // Create HTML that matches the resume preview with proper page breaks
+      const resumeHTML = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Resume - ${data.personal?.fullName || 'Unknown'}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 0.5in;
+    }
+    
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 11px;
+      line-height: 1.4;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .resume-container {
+      max-width: 8.5in;
+      margin: 0 auto;
+    }
+    
+    .section {
+      page-break-inside: avoid;
+      margin-bottom: 16px;
+    }
+    
+    .section-title {
+      font-size: 12px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-bottom: 2px solid #333;
+      padding-bottom: 4px;
+      margin-bottom: 8px;
+      page-break-after: avoid;
+    }
+    
+    .contact-info {
+      margin-bottom: 16px;
+      page-break-after: avoid;
+    }
+    
+    .name {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+    
+    .title {
+      font-size: 12px;
+      font-weight: normal;
+      margin-bottom: 4px;
+      color: #666;
+    }
+    
+    .contact-details {
+      font-size: 10px;
+      color: #666;
+    }
+    
+    .summary {
+      margin-bottom: 16px;
+      page-break-inside: avoid;
+    }
+    
+    .experience-item, .education-item, .project-item {
+      margin-bottom: 12px;
+      page-break-inside: avoid;
+    }
+    
+    .item-header {
+      font-weight: bold;
+      margin-bottom: 2px;
+    }
+    
+    .item-subheader {
+      font-style: italic;
+      color: #666;
+      margin-bottom: 4px;
+      font-size: 10px;
+    }
+    
+    .bullets {
+      margin: 4px 0 0 16px;
+      padding: 0;
+    }
+    
+    .bullets li {
+      margin-bottom: 2px;
+      font-size: 10px;
+    }
+    
+    .skills {
+      margin-bottom: 8px;
+    }
+    
+    .links {
+      margin-top: 4px;
+      font-size: 9px;
+    }
+    
+    .links a {
+      color: #0066cc;
+      text-decoration: none;
+    }
+    
+    .links a:hover {
+      text-decoration: underline;
+    }
+    
+    /* Ensure sections don't break across pages */
+    .section, .experience-item, .education-item, .project-item {
+      page-break-inside: avoid;
+    }
+    
+    /* Add some spacing at the end of each section */
+    .section:last-child {
+      margin-bottom: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="resume-container">
+    <!-- Contact Information -->
+    <div class="section contact-info">
+      <div class="name">${data.personal?.fullName || 'Unknown'}</div>
+      <div class="title">${data.personal?.title || ''}</div>
+      <div class="contact-details">
+        ${data.personal?.email || ''} ${data.personal?.phone ? '|' : ''} ${data.personal?.phone || ''} ${data.personal?.location ? '|' : ''} ${data.personal?.location || ''}
+      </div>
+    </div>
 
-${data.personal?.fullName || ''}
-${data.personal?.title || ''}
-${data.personal?.email || ''} | ${data.personal?.phone || ''} | ${data.personal?.location || ''}
+    <!-- Summary -->
+    ${data.summary ? `
+    <div class="section summary">
+      <div class="section-title">Professional Summary</div>
+      <div>${data.summary}</div>
+    </div>
+    ` : ''}
 
-PROFESSIONAL SUMMARY
-${data.summary || ''}
+    <!-- Experience -->
+    ${data.experience && data.experience.length > 0 ? `
+    <div class="section">
+      <div class="section-title">Professional Experience</div>
+      ${data.experience.map(exp => `
+        <div class="experience-item">
+          <div class="item-header">${exp.jobTitle || 'Position'}</div>
+          <div class="item-subheader">${exp.company || 'Company'} | ${exp.startDate || ''} - ${exp.endDate || ''}</div>
+          ${exp.bullets && exp.bullets.length > 0 ? `
+            <ul class="bullets">
+              ${exp.bullets.filter(b => b.trim()).map(bullet => `<li>${bullet}</li>`).join('')}
+            </ul>
+          ` : ''}
+        </div>
+      `).join('')}
+    </div>
+    ` : ''}
 
-EXPERIENCE
-${data.experience?.map(exp => `
-${exp.jobTitle} at ${exp.company}
-${exp.startDate} - ${exp.endDate}
-${exp.bullets?.map(bullet => `• ${bullet}`).join('\n') || ''}
-`).join('\n')}
+    <!-- Education -->
+    ${data.education && data.education.length > 0 ? `
+    <div class="section">
+      <div class="section-title">Education</div>
+      ${data.education.map(edu => `
+        <div class="education-item">
+          <div class="item-header">${edu.degree || 'Degree'} ${edu.field ? `in ${edu.field}` : ''}</div>
+          <div class="item-subheader">${edu.school || 'School'} | ${edu.startDate || ''} - ${edu.endDate || ''}</div>
+          ${edu.gpa ? `<div>GPA: ${edu.gpa}</div>` : ''}
+        </div>
+      `).join('')}
+    </div>
+    ` : ''}
 
-EDUCATION
-${data.education?.map(edu => `
-${edu.degree} in ${edu.field}
-${edu.school}
-${edu.startDate} - ${edu.endDate}
-`).join('\n')}
+    <!-- Projects -->
+    ${data.projects && data.projects.length > 0 ? `
+    <div class="section">
+      <div class="section-title">Projects</div>
+      ${data.projects.map(proj => `
+        <div class="project-item">
+          <div class="item-header">${proj.title || 'Project'}</div>
+          ${proj.description ? `<div>${proj.description}</div>` : ''}
+          ${proj.bullets && proj.bullets.length > 0 ? `
+            <ul class="bullets">
+              ${proj.bullets.filter(b => b.trim()).map(bullet => `<li>${bullet}</li>`).join('')}
+            </ul>
+          ` : ''}
+          ${proj.links && proj.links.length > 0 ? `
+            <div class="links">
+              ${proj.links.map(link => 
+                link.url && link.label ? `<a href="${link.url}" target="_blank">${link.label}</a>` : ''
+              ).filter(link => link).join(' | ')}
+            </div>
+          ` : ''}
+        </div>
+      `).join('')}
+    </div>
+    ` : ''}
 
-SKILLS
-${data.skills?.join(', ') || ''}
+    <!-- Skills -->
+    ${data.skills && data.skills.length > 0 ? `
+    <div class="section">
+      <div class="section-title">Skills</div>
+      <div class="skills">${data.skills.join(' • ')}</div>
+    </div>
+    ` : ''}
+  </div>
+</body>
+</html>
       `.trim();
 
-      const blob = new Blob([resumeText], { type: 'text/plain' });
+      // Create a blob and download
+      const blob = new Blob([resumeHTML], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `Resume_${data.personal?.fullName || 'document'}_${Date.now()}.txt`;
+      link.download = `Resume_${data.personal?.fullName || 'document'}_${Date.now()}.html`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+      
+      // Also open in new window for printing to PDF
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(resumeHTML);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => {
+          printWindow.print();
+        }, 500);
+      }
       
     } catch (error) {
       console.error('Download error:', error);

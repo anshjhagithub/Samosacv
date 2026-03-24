@@ -33,7 +33,7 @@ export default function UnlockPage() {
     }
   }, [router]);
 
-  const handlePurchase = async (mobile?: string) => {
+  const handlePurchase = async (mobile: string) => {
     if (!data || !preview) return;
     
     setLoading(true);
@@ -56,17 +56,12 @@ export default function UnlockPage() {
         body: JSON.stringify({
           cart,
           resumeId: preview.resumeId,
-          mobileNumber: mobile || preview.customerPhone,
+          mobileNumber: mobile,
         }),
       });
 
       const j = await res.json();
       if (!res.ok) {
-        // If the error indicates missing mobile number, show modal
-        if (j.error?.toLowerCase().includes("phone") || j.error?.toLowerCase().includes("mobile")) {
-          setShowMobileModal(true);
-          return;
-        }
         throw new Error(j.error || "Failed to create order");
       }
 
@@ -168,7 +163,7 @@ export default function UnlockPage() {
             </div>
 
             <button
-              onClick={() => handlePurchase()}
+              onClick={() => setShowMobileModal(true)}
               disabled={loading}
               className="w-full bg-amber-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-amber-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -192,9 +187,6 @@ export default function UnlockPage() {
             onClose={() => setShowMobileModal(false)}
             onConfirm={async (phone: string) => {
               setShowMobileModal(false);
-              const updatedPreview = { ...preview, customerPhone: phone };
-              setUnlockPreview(updatedPreview);
-              setPreview(updatedPreview);
               await handlePurchase(phone);
             }}
           />
