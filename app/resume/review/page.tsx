@@ -317,8 +317,24 @@ export default function ResumeReviewPage() {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      const imgData = canvas.toDataURL('image/png', 0.8); // Slightly lower quality for mobile/memory
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      const imgData = canvas.toDataURL('image/png', 0.8);
+      
+      // Calculate how many pages we need
+      const imgProps = pdf.getImageProperties(imgData);
+      const imgWidth = pdfWidth;
+      const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      
+      const totalPages = Math.ceil(imgHeight / pdfHeight);
+      
+      // Add each page
+      for (let i = 0; i < totalPages; i++) {
+        if (i > 0) {
+          pdf.addPage();
+        }
+        
+        const yOffset = -i * pdfHeight;
+        pdf.addImage(imgData, 'PNG', 0, yOffset, imgWidth, imgHeight);
+      }
       
       // Clean up canvas to free memory
       canvas.width = 1;
@@ -392,8 +408,27 @@ export default function ResumeReviewPage() {
       document.body.removeChild(wrapper);
       
       const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
       const imgData = canvas.toDataURL('image/png', 0.8);
-      pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
+      
+      // Calculate how many pages we need
+      const imgProps = pdf.getImageProperties(imgData);
+      const imgWidth = pdfWidth;
+      const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      
+      const totalPages = Math.ceil(imgHeight / pdfHeight);
+      
+      // Add each page
+      for (let i = 0; i < totalPages; i++) {
+        if (i > 0) {
+          pdf.addPage();
+        }
+        
+        const yOffset = -i * pdfHeight;
+        pdf.addImage(imgData, 'PNG', 0, yOffset, imgWidth, imgHeight);
+      }
+      
       pdf.save(`resume-${data.personal?.fullName || 'resume'}.pdf`);
       
     } catch (error) {
