@@ -39,7 +39,13 @@ export const metadata: Metadata = {
     languages: { "en-IN": siteUrl },
   },
   icons: {
-    icon: "/favicon.svg",
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/icon.png", type: "image/png", sizes: "192x192" },
+    ],
+    apple: [
+      { url: "/apple-icon.png", type: "image/png" },
+    ],
   },
   openGraph: {
     type: "website",
