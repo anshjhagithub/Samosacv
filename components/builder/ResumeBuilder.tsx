@@ -855,19 +855,32 @@ export function ResumeBuilder({ data, onUpdate }: ResumeBuilderProps) {
                       <div>
                         <label className={labelClass}>Key achievements</label>
                         {proj.bullets?.map((b, i) => (
-                          <input
-                            key={i}
-                            type="text"
-                            value={b}
-                            onChange={(e) => {
-                              const bullets = [...(proj.bullets || [""])];
-                              bullets[i] = e.target.value;
-                              if (i === bullets.length - 1 && e.target.value) bullets.push("");
-                              updateProject(proj.id, { bullets });
-                            }}
-                            placeholder={`Bullet ${i + 1}`}
-                            className={`${inputClass} mb-2`}
-                          />
+                          <div key={i} className="flex gap-2 mb-2">
+                            <input
+                              type="text"
+                              value={b}
+                              onChange={(e) => {
+                                const bullets = [...(proj.bullets || [""])];
+                                bullets[i] = e.target.value;
+                                if (i === bullets.length - 1 && e.target.value) bullets.push("");
+                                updateProject(proj.id, { bullets });
+                              }}
+                              placeholder={`Bullet ${i + 1}`}
+                              className={`${inputClass} flex-1`}
+                            />
+                            {(proj.bullets?.length || 0) > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const bullets = (proj.bullets || []).filter((_, idx) => idx !== i);
+                                  updateProject(proj.id, { bullets });
+                                }}
+                                className="text-xs text-red-400/90 hover:text-red-300 px-2 py-1"
+                              >
+                                Remove
+                              </button>
+                            )}
+                          </div>
                         ))}
                       </div>
                       <div>
