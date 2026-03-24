@@ -845,6 +845,13 @@ export function ResumeBuilder({ data, onUpdate }: ResumeBuilderProps) {
                         placeholder="Project title"
                         className={inputClass}
                       />
+                      <textarea
+                        value={proj.description}
+                        onChange={(e) => updateProject(proj.id, { description: e.target.value })}
+                        placeholder="Brief project description"
+                        rows={2}
+                        className={`${inputClass} resize-y`}
+                      />
                       <div>
                         <label className={labelClass}>Key achievements</label>
                         {proj.bullets?.map((b, i) => (

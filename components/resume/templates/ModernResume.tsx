@@ -116,6 +116,18 @@ export function ModernResume({ data }: { data: ResumeData }) {
                     ))}
                   </ul>
                 ) : null}
+                {proj.links && proj.links.length > 0 && (
+                  <div className="mt-1 space-y-0.5">
+                    {proj.links.map((link, i) => (
+                      <div key={i} className="text-[10px]">
+                        <span className="text-gray-600">{link.label}: </span>
+                        <a href={link.url} className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">
+                          {link.url}
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </section>
