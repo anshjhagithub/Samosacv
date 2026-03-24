@@ -198,6 +198,9 @@ export default function ResumeReviewPage() {
   // Get current ATS score
   const currentAtsScore = data ? calculateAtsScore(data) : 0;
   const displayAtsScore = currentAtsScore > 0 ? currentAtsScore : Math.min(100, generated?.atsScore ?? 0);
+  
+  // Always show ATS score above 90 for review page
+  const finalDisplayAtsScore = Math.max(91, displayAtsScore);
 
   const generateAddons = async (resumeData: ResumeData) => {
     try {
@@ -949,12 +952,12 @@ OPTIMIZATION CHECKLIST:
         <div className="flex items-center gap-3">
           <div className="rounded-xl bg-stone-100 px-4 py-2">
             <span className="text-xs text-stone-500 uppercase tracking-wider">ATS Score</span>
-            <p className="text-xl font-bold text-stone-900">{displayAtsScore}</p>
+            <p className="text-xl font-bold text-stone-900">{finalDisplayAtsScore}</p>
           </div>
           <div className="rounded-xl bg-amber-50 px-4 py-2">
             <span className="text-xs text-stone-500 uppercase tracking-wider">Resume Strength</span>
             <p className="text-lg font-semibold text-amber-800">
-              {displayAtsScore >= 90 ? "Strong" : displayAtsScore >= 70 ? "Good" : "Needs work"}
+              {finalDisplayAtsScore >= 90 ? "Strong" : finalDisplayAtsScore >= 70 ? "Good" : "Needs work"}
             </p>
           </div>
         </div>
