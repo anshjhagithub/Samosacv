@@ -363,6 +363,31 @@ export function ResumeBuilder({ data, onUpdate }: ResumeBuilderProps) {
   const removeProject = (id: string) =>
     projects.length > 1 && setProjects(projects.filter((p) => p.id !== id));
 
+  const addProjectLink = (projectId: string) => {
+    const project = projects.find(p => p.id === projectId);
+    if (project) {
+      const newLinks = [...(project.links || []), { url: "", label: "" }];
+      updateProject(projectId, { links: newLinks });
+    }
+  };
+
+  const updateProjectLink = (projectId: string, linkIndex: number, field: 'url' | 'label', value: string) => {
+    const project = projects.find(p => p.id === projectId);
+    if (project) {
+      const newLinks = [...(project.links || [])];
+      newLinks[linkIndex] = { ...newLinks[linkIndex], [field]: value };
+      updateProject(projectId, { links: newLinks });
+    }
+  };
+
+  const removeProjectLink = (projectId: string, linkIndex: number) => {
+    const project = projects.find(p => p.id === projectId);
+    if (project) {
+      const newLinks = (project.links || []).filter((_, i) => i !== linkIndex);
+      updateProject(projectId, { links: newLinks });
+    }
+  };
+
   const addSkill = () => {
     const s = newSkill.trim();
     if (s) {
@@ -837,6 +862,43 @@ export function ResumeBuilder({ data, onUpdate }: ResumeBuilderProps) {
                             className={`${inputClass} mb-2`}
                           />
                         ))}
+                      </div>
+                      <div>
+                        <label className={labelClass}>Project Links</label>
+                        {proj.links?.map((link, i) => (
+                          <div key={i} className="flex gap-2 mb-2">
+                            <input
+                              type="text"
+                              value={link.label}
+                              onChange={(e) => updateProjectLink(proj.id, i, 'label', e.target.value)}
+                              placeholder="Label (e.g. GitHub, Demo)"
+                              className={`${inputClass} flex-1`}
+                            />
+                            <input
+                              type="url"
+                              value={link.url}
+                              onChange={(e) => updateProjectLink(proj.id, i, 'url', e.target.value)}
+                              placeholder="https://..."
+                              className={`${inputClass} flex-2`}
+                            />
+                            {(proj.links?.length || 0) > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removeProjectLink(proj.id, i)}
+                                className="text-xs text-red-400/90 hover:text-red-300 px-2 py-1"
+                              >
+                                Remove
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => addProjectLink(proj.id)}
+                          className="text-xs text-amber-600 hover:text-amber-700 font-medium"
+                        >
+                          + Add Link
+                        </button>
                       </div>
                     </div>
                   ))}

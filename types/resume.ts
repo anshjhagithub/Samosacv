@@ -118,6 +118,8 @@ export interface ProjectEntry {
   description: string;
   /** When present, render these as bullet points instead of a single description. */
   bullets?: string[];
+  /** Project links (GitHub, demo, etc.) */
+  links?: { url: string; label: string }[];
 }
 
 export interface ResumeData {
@@ -189,7 +191,7 @@ export function createEmptyEducation(id: string): EducationEntry {
 }
 
 export function createEmptyProject(id: string): ProjectEntry {
-  return { id, title: "", description: "", bullets: [""] };
+  return { id, title: "", description: "", bullets: [""], links: [] };
 }
 
 export function createEmptyResume(): ResumeData {
