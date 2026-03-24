@@ -49,7 +49,7 @@ export function ModernResume({ data }: { data: ResumeData }) {
           </section>
         )}
 
-        <section className="mb-6" style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
+        <section className="mb-6">
           <h2 className={`text-[10px] font-bold uppercase tracking-widest text-gray-900 mb-3 pb-1.5 ${UNDERLINE}`}>
             Experience
           </h2>
@@ -79,7 +79,7 @@ export function ModernResume({ data }: { data: ResumeData }) {
           </div>
         </section>
 
-        <section className="mb-6" style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
+        <section className="mb-6">
           <h2 className={`text-[10px] font-bold uppercase tracking-widest text-gray-900 mb-3 pb-1.5 ${UNDERLINE}`}>
             Education
           </h2>
@@ -99,7 +99,7 @@ export function ModernResume({ data }: { data: ResumeData }) {
         </section>
 
         {projects.filter((p) => p.title || p.description || (p.bullets && p.bullets.length)).length > 0 && (
-          <section className="mb-6" style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
+          <section className="mb-6">
             <h2 className={`text-[10px] font-bold uppercase tracking-widest text-gray-900 mb-2 pb-1.5 ${UNDERLINE}`}>
               Projects
             </h2>
@@ -134,7 +134,7 @@ export function ModernResume({ data }: { data: ResumeData }) {
         )}
 
         {skills.length > 0 && (
-          <section style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
+          <section>
             <h2 className={`text-[10px] font-bold uppercase tracking-widest text-gray-900 mb-2 pb-1.5 ${UNDERLINE}`}>
               Skills
             </h2>

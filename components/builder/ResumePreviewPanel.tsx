@@ -41,7 +41,6 @@ export function ResumePreviewPanel({
   const [showTemplates, setShowTemplates] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationStep, setGenerationStep] = useState<"init" | "addons" | "pdf" | "done">("init");
-  const [showPageBreaks, setShowPageBreaks] = useState(true);
   const previewRef = useRef<HTMLDivElement>(null);
   const templateId = TEMPLATE_IDS.includes(data.templateId) ? data.templateId : "classic";
   // Every field edit from the builder flows through here so the preview stays in sync
@@ -136,11 +135,6 @@ export function ResumePreviewPanel({
           clone.style.transform = 'none';
           clone.style.width = '100%';
           clone.style.height = 'auto';
-          
-          // Remove page break indicators from the clone before PDF generation
-          const pageBreakIndicators = clone.querySelectorAll('.page-break-indicator');
-          pageBreakIndicators.forEach(indicator => indicator.remove());
-          
           wrapper.appendChild(clone);
           document.body.appendChild(wrapper);
 
@@ -151,26 +145,7 @@ export function ResumePreviewPanel({
           const pdf = new jsPDF("p", "mm", "a4");
           const pdfWidth = pdf.internal.pageSize.getWidth();
           const pdfHeight = pdf.internal.pageSize.getHeight();
-          
-          const imgData = canvas.toDataURL("image/png", 0.8);
-          
-          // Calculate how many pages we need
-          const imgProps = pdf.getImageProperties(imgData);
-          const imgWidth = pdfWidth;
-          const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
-          
-          const totalPages = Math.ceil(imgHeight / pdfHeight);
-          
-          // Add each page
-          for (let i = 0; i < totalPages; i++) {
-            if (i > 0) {
-              pdf.addPage();
-            }
-            
-            const yOffset = -i * pdfHeight;
-            pdf.addImage(imgData, "PNG", 0, yOffset, imgWidth, imgHeight);
-          }
-          
+          pdf.addImage(canvas.toDataURL("image/png", 0.8), "PNG", 0, 0, pdfWidth, pdfHeight);
           pdf.save(`resume-${data.personal?.fullName || "resume"}.pdf`);
         }
         
@@ -297,16 +272,6 @@ export function ResumePreviewPanel({
             <span className="px-2 py-1 text-xs text-stone-500 min-w-[2.5rem] text-center">{zoom}%</span>
             <button type="button" onClick={() => setZoom((z) => Math.min(120, z + 10))} className="p-2 text-stone-500 hover:text-stone-900 transition-colors" aria-label="Zoom in">+</button>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowPageBreaks(!showPageBreaks)}
-            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-all ${showPageBreaks ? "border-red-400 bg-red-50 text-red-800" : "border-stone-200 bg-white text-stone-700 hover:border-stone-300"}`}
-          >
-            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            Page Breaks
-          </button>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           {toolbarExtra}
@@ -377,21 +342,7 @@ export function ResumePreviewPanel({
           className={`transition-transform duration-200 origin-top shrink-0 relative ${!isPaid ? "select-none" : ""}`}
           style={{ transform: `scale(${zoom / 100})`, transformOrigin: "top center" }}
         >
-          <div className="resume-pdf-source bg-white rounded-lg shadow-xl overflow-hidden border border-stone-200 relative" style={{ width: "21cm", minHeight: "29.7cm" }}>
-            {/* Page break indicators */}
-            {showPageBreaks && (
-              <>
-                <div className="page-break-indicator absolute top-[29.7cm] left-0 right-0 h-px bg-red-400 z-20" style={{ boxShadow: '0 0 4px rgba(248, 113, 113, 0.5)' }}>
-                  <span className="absolute -top-2 left-2 text-xs text-red-500 font-medium bg-white px-1 rounded">Page 1</span>
-                </div>
-                <div className="page-break-indicator absolute top-[59.4cm] left-0 right-0 h-px bg-red-400 z-20" style={{ boxShadow: '0 0 4px rgba(248, 113, 113, 0.5)' }}>
-                  <span className="absolute -top-2 left-2 text-xs text-red-500 font-medium bg-white px-1 rounded">Page 2</span>
-                </div>
-                <div className="page-break-indicator absolute top-[89.1cm] left-0 right-0 h-px bg-red-400 z-20" style={{ boxShadow: '0 0 4px rgba(248, 113, 113, 0.5)' }}>
-                  <span className="absolute -top-2 left-2 text-xs text-red-500 font-medium bg-white px-1 rounded">Page 3</span>
-                </div>
-              </>
-            )}
+          <div className="resume-pdf-source bg-white rounded-lg shadow-xl overflow-hidden border border-stone-200" style={{ width: "21cm", minHeight: "29.7cm" }}>
             <ResumePreview data={displayData} />
           </div>
 

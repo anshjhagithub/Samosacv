@@ -49,7 +49,7 @@ export function ProfessionalResume({ data }: { data: ResumeData }) {
           </section>
         )}
 
-        <section className="mb-5" style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
+        <section className="mb-5">
           <h2 className="text-[10px] font-bold uppercase tracking-widest text-gray-900 mb-3 pb-1 border-b border-gray-300">
             Experience
           </h2>

@@ -289,10 +289,6 @@ export default function ResumeReviewPage() {
       clone.style.transform = 'none';
       clone.style.transformOrigin = 'unset';
       
-      // Remove page break indicators from the clone before PDF generation
-      const pageBreakIndicators = clone.querySelectorAll('.page-break-indicator');
-      pageBreakIndicators.forEach(indicator => indicator.remove());
-      
       wrapper.appendChild(clone);
       document.body.appendChild(wrapper);
       targetEl = clone;
@@ -321,24 +317,8 @@ export default function ResumeReviewPage() {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      const imgData = canvas.toDataURL('image/png', 0.8);
-      
-      // Calculate how many pages we need
-      const imgProps = pdf.getImageProperties(imgData);
-      const imgWidth = pdfWidth;
-      const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
-      
-      const totalPages = Math.ceil(imgHeight / pdfHeight);
-      
-      // Add each page
-      for (let i = 0; i < totalPages; i++) {
-        if (i > 0) {
-          pdf.addPage();
-        }
-        
-        const yOffset = -i * pdfHeight;
-        pdf.addImage(imgData, 'PNG', 0, yOffset, imgWidth, imgHeight);
-      }
+      const imgData = canvas.toDataURL('image/png', 0.8); // Slightly lower quality for mobile/memory
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       
       // Clean up canvas to free memory
       canvas.width = 1;
@@ -398,11 +378,6 @@ export default function ResumeReviewPage() {
       
       const clone = el.cloneNode(true) as HTMLElement;
       clone.style.transform = 'none';
-      
-      // Remove page break indicators from the clone before PDF generation
-      const pageBreakIndicators = clone.querySelectorAll('.page-break-indicator');
-      pageBreakIndicators.forEach(indicator => indicator.remove());
-      
       wrapper.appendChild(clone);
       document.body.appendChild(wrapper);
       
@@ -417,27 +392,8 @@ export default function ResumeReviewPage() {
       document.body.removeChild(wrapper);
       
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
       const imgData = canvas.toDataURL('image/png', 0.8);
-      
-      // Calculate how many pages we need
-      const imgProps = pdf.getImageProperties(imgData);
-      const imgWidth = pdfWidth;
-      const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
-      
-      const totalPages = Math.ceil(imgHeight / pdfHeight);
-      
-      // Add each page
-      for (let i = 0; i < totalPages; i++) {
-        if (i > 0) {
-          pdf.addPage();
-        }
-        
-        const yOffset = -i * pdfHeight;
-        pdf.addImage(imgData, 'PNG', 0, yOffset, imgWidth, imgHeight);
-      }
-      
+      pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
       pdf.save(`resume-${data.personal?.fullName || 'resume'}.pdf`);
       
     } catch (error) {
