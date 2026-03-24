@@ -1249,21 +1249,9 @@ export function ResumeBuilder({ data, onUpdate }: ResumeBuilderProps) {
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.8, delay: 0.8 }}
               >
-                <p className="text-sm font-medium text-stone-800 mb-2">
-                  🎯 <span className="text-emerald-700 font-bold">Pro Tip:</span> Complete your resume first, then visit the review page to access all these free tools!
+                <p className="text-sm font-medium text-stone-800">
+                  🎯 <span className="text-emerald-700 font-bold">Pro Tip:</span> Complete your resume and unlock the PDF to access all these free tools!
                 </p>
-                <motion.a
-                  href="/resume/review"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  Go to Review Page
-                  <motion.span
-                    animate={{ x: [0, 3, 0] }}
-                    transition={{ duration: 1, repeat: Infinity }}
-                  >→</motion.span>
-                </motion.a>
               </motion.div>
             </motion.section>
           </div>
