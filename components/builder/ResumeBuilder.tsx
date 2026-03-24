@@ -820,13 +820,24 @@ export function ResumeBuilder({ data, onUpdate }: ResumeBuilderProps) {
                         placeholder="Project title"
                         className={inputClass}
                       />
-                      <textarea
-                        value={proj.description}
-                        onChange={(e) => updateProject(proj.id, { description: e.target.value })}
-                        placeholder="Brief description and impact"
-                        rows={2}
-                        className={`${inputClass} resize-y`}
-                      />
+                      <div>
+                        <label className={labelClass}>Key achievements</label>
+                        {proj.bullets?.map((b, i) => (
+                          <input
+                            key={i}
+                            type="text"
+                            value={b}
+                            onChange={(e) => {
+                              const bullets = [...(proj.bullets || [""])];
+                              bullets[i] = e.target.value;
+                              if (i === bullets.length - 1 && e.target.value) bullets.push("");
+                              updateProject(proj.id, { bullets });
+                            }}
+                            placeholder={`Bullet ${i + 1}`}
+                            className={`${inputClass} mb-2`}
+                          />
+                        ))}
+                      </div>
                     </div>
                   ))}
                 </div>

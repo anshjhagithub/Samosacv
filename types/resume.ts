@@ -189,7 +189,7 @@ export function createEmptyEducation(id: string): EducationEntry {
 }
 
 export function createEmptyProject(id: string): ProjectEntry {
-  return { id, title: "", description: "" };
+  return { id, title: "", description: "", bullets: [""] };
 }
 
 export function createEmptyResume(): ResumeData {
