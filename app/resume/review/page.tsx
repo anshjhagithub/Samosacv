@@ -289,6 +289,10 @@ export default function ResumeReviewPage() {
       clone.style.transform = 'none';
       clone.style.transformOrigin = 'unset';
       
+      // Remove page break indicators from the clone before PDF generation
+      const pageBreakIndicators = clone.querySelectorAll('.page-break-indicator');
+      pageBreakIndicators.forEach(indicator => indicator.remove());
+      
       wrapper.appendChild(clone);
       document.body.appendChild(wrapper);
       targetEl = clone;
@@ -394,6 +398,11 @@ export default function ResumeReviewPage() {
       
       const clone = el.cloneNode(true) as HTMLElement;
       clone.style.transform = 'none';
+      
+      // Remove page break indicators from the clone before PDF generation
+      const pageBreakIndicators = clone.querySelectorAll('.page-break-indicator');
+      pageBreakIndicators.forEach(indicator => indicator.remove());
+      
       wrapper.appendChild(clone);
       document.body.appendChild(wrapper);
       

@@ -136,6 +136,11 @@ export function ResumePreviewPanel({
           clone.style.transform = 'none';
           clone.style.width = '100%';
           clone.style.height = 'auto';
+          
+          // Remove page break indicators from the clone before PDF generation
+          const pageBreakIndicators = clone.querySelectorAll('.page-break-indicator');
+          pageBreakIndicators.forEach(indicator => indicator.remove());
+          
           wrapper.appendChild(clone);
           document.body.appendChild(wrapper);
 
@@ -146,7 +151,26 @@ export function ResumePreviewPanel({
           const pdf = new jsPDF("p", "mm", "a4");
           const pdfWidth = pdf.internal.pageSize.getWidth();
           const pdfHeight = pdf.internal.pageSize.getHeight();
-          pdf.addImage(canvas.toDataURL("image/png", 0.8), "PNG", 0, 0, pdfWidth, pdfHeight);
+          
+          const imgData = canvas.toDataURL("image/png", 0.8);
+          
+          // Calculate how many pages we need
+          const imgProps = pdf.getImageProperties(imgData);
+          const imgWidth = pdfWidth;
+          const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+          
+          const totalPages = Math.ceil(imgHeight / pdfHeight);
+          
+          // Add each page
+          for (let i = 0; i < totalPages; i++) {
+            if (i > 0) {
+              pdf.addPage();
+            }
+            
+            const yOffset = -i * pdfHeight;
+            pdf.addImage(imgData, "PNG", 0, yOffset, imgWidth, imgHeight);
+          }
+          
           pdf.save(`resume-${data.personal?.fullName || "resume"}.pdf`);
         }
         
@@ -357,13 +381,13 @@ export function ResumePreviewPanel({
             {/* Page break indicators */}
             {showPageBreaks && (
               <>
-                <div className="absolute top-[29.7cm] left-0 right-0 h-px bg-red-400 z-20" style={{ boxShadow: '0 0 4px rgba(248, 113, 113, 0.5)' }}>
+                <div className="page-break-indicator absolute top-[29.7cm] left-0 right-0 h-px bg-red-400 z-20" style={{ boxShadow: '0 0 4px rgba(248, 113, 113, 0.5)' }}>
                   <span className="absolute -top-2 left-2 text-xs text-red-500 font-medium bg-white px-1 rounded">Page 1</span>
                 </div>
-                <div className="absolute top-[59.4cm] left-0 right-0 h-px bg-red-400 z-20" style={{ boxShadow: '0 0 4px rgba(248, 113, 113, 0.5)' }}>
+                <div className="page-break-indicator absolute top-[59.4cm] left-0 right-0 h-px bg-red-400 z-20" style={{ boxShadow: '0 0 4px rgba(248, 113, 113, 0.5)' }}>
                   <span className="absolute -top-2 left-2 text-xs text-red-500 font-medium bg-white px-1 rounded">Page 2</span>
                 </div>
-                <div className="absolute top-[89.1cm] left-0 right-0 h-px bg-red-400 z-20" style={{ boxShadow: '0 0 4px rgba(248, 113, 113, 0.5)' }}>
+                <div className="page-break-indicator absolute top-[89.1cm] left-0 right-0 h-px bg-red-400 z-20" style={{ boxShadow: '0 0 4px rgba(248, 113, 113, 0.5)' }}>
                   <span className="absolute -top-2 left-2 text-xs text-red-500 font-medium bg-white px-1 rounded">Page 3</span>
                 </div>
               </>

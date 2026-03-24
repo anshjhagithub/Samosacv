@@ -51,7 +51,7 @@ export function ClassicResume({ data }: { data: ResumeData }) {
           </section>
         )}
 
-        <section className="mb-6">
+        <section className="mb-6" style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
           <h2 className={`text-[10px] font-bold uppercase tracking-widest ${ACCENT} mb-3 pb-1.5 border-b-2 ${ACCENT_BORDER}`}>
             Experience
           </h2>
@@ -81,7 +81,7 @@ export function ClassicResume({ data }: { data: ResumeData }) {
           </div>
         </section>
 
-        <section className="mb-6">
+        <section className="mb-6" style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
           <h2 className={`text-[10px] font-bold uppercase tracking-widest ${ACCENT} mb-3 pb-1.5 border-b-2 ${ACCENT_BORDER}`}>
             Education
           </h2>
@@ -101,7 +101,7 @@ export function ClassicResume({ data }: { data: ResumeData }) {
         </section>
 
         {projects.filter((p) => p.title || p.description || (p.bullets && p.bullets.length)).length > 0 && (
-          <section className="mb-6">
+          <section className="mb-6" style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
             <h2 className={`text-[10px] font-bold uppercase tracking-widest ${ACCENT} mb-3 pb-1.5 border-b-2 ${ACCENT_BORDER}`}>
               Projects
             </h2>
@@ -136,7 +136,7 @@ export function ClassicResume({ data }: { data: ResumeData }) {
         )}
 
         {skills.length > 0 && (
-          <section>
+          <section style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
             <h2 className={`text-[10px] font-bold uppercase tracking-widest ${ACCENT} mb-2 pb-1.5 border-b-2 ${ACCENT_BORDER}`}>
               Skills
             </h2>

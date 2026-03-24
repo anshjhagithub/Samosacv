@@ -50,7 +50,7 @@ export function ExecutiveResume({ data }: { data: ResumeData }) {
             </section>
           )}
 
-          <section className="mb-6">
+          <section className="mb-6" style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
             <h2 className={sectionTitle}>Professional Experience</h2>
             <div className="space-y-5 mt-3">
               {experience.map((exp) => (
@@ -78,7 +78,7 @@ export function ExecutiveResume({ data }: { data: ResumeData }) {
             </div>
           </section>
 
-          <section className="mb-6">
+          <section className="mb-6" style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
             <h2 className={sectionTitle}>Education</h2>
             <div className="mt-3 space-y-3">
               {education.map((edu) => (
@@ -98,7 +98,7 @@ export function ExecutiveResume({ data }: { data: ResumeData }) {
           </section>
 
           {projects.filter((p) => p.title || p.description || (p.bullets && p.bullets.length)).length > 0 && (
-            <section className="mb-6">
+            <section className="mb-6" style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
               <h2 className={sectionTitle}>Key Projects</h2>
               <div className="mt-3 space-y-2">
                 {projects.filter((p) => p.title || p.description || (p.bullets && p.bullets.length)).map((proj) => (
@@ -133,7 +133,7 @@ export function ExecutiveResume({ data }: { data: ResumeData }) {
           )}
 
           {skills.length > 0 && (
-            <section>
+            <section style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
               <h2 className={sectionTitle}>Core Competencies</h2>
               <div className="flex flex-wrap gap-2 mt-2">
                 {skills.map((s, i) => (

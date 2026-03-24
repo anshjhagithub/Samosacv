@@ -57,7 +57,7 @@ export function ThemedResume({
         </section>
       )}
 
-      <section className="mb-4">
+      <section className="mb-4" style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
         <SectionHeader theme={theme}>Experience</SectionHeader>
         <div className={theme.compact ? "space-y-2" : "space-y-3"}>
           {experience.map((exp) => (
@@ -87,7 +87,7 @@ export function ThemedResume({
         </div>
       </section>
 
-      <section className="mb-4">
+      <section className="mb-4" style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
         <SectionHeader theme={theme}>Education</SectionHeader>
         {education.map((edu) => (
           <div key={edu.id} className="mb-2">
@@ -107,7 +107,7 @@ export function ThemedResume({
       </section>
 
       {projects.filter((p) => p.title || p.description || (p.bullets && p.bullets.length)).length > 0 && (
-        <section className="mb-4">
+        <section className="mb-4" style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
           <SectionHeader theme={theme}>Projects</SectionHeader>
           {projects.filter((p) => p.title || p.description || (p.bullets && p.bullets.length)).map((proj) => (
             <div key={proj.id} className="mb-2">
@@ -142,7 +142,7 @@ export function ThemedResume({
       )}
 
       {skills.length > 0 && (
-        <section>
+        <section style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
           <SectionHeader theme={theme}>Skills</SectionHeader>
           <p className="text-gray-700">{skills.join(" · ")}</p>
         </section>

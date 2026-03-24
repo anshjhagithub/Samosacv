@@ -45,7 +45,7 @@ export function MinimalResume({ data }: { data: ResumeData }) {
         </section>
       )}
 
-      <section className="mb-10 text-center">
+      <section className="mb-10 text-center" style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
         <h2 className={sectionTitle}>Experience</h2>
         <div className="w-12 h-px bg-gray-300 mx-auto mb-4" />
         <div className="space-y-5 text-left max-w-[95%] mx-auto">
@@ -74,7 +74,7 @@ export function MinimalResume({ data }: { data: ResumeData }) {
         </div>
       </section>
 
-      <section className="mb-10 text-center">
+      <section className="mb-10 text-center" style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
         <h2 className={sectionTitle}>Education</h2>
         <div className="w-12 h-px bg-gray-300 mx-auto mb-4" />
         <div className="text-left max-w-[95%] mx-auto space-y-3">
@@ -95,7 +95,7 @@ export function MinimalResume({ data }: { data: ResumeData }) {
       </section>
 
       {projects.filter((p) => p.title || p.description || (p.bullets && p.bullets.length)).length > 0 && (
-        <section className="mb-10 text-center">
+        <section className="mb-10 text-center" style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
           <h2 className={sectionTitle}>Projects</h2>
           <div className="w-12 h-px bg-gray-300 mx-auto mb-4" />
           <div className="text-left max-w-[95%] mx-auto space-y-3">
@@ -131,7 +131,7 @@ export function MinimalResume({ data }: { data: ResumeData }) {
       )}
 
       {skills.length > 0 && (
-        <section className="text-center">
+        <section className="text-center" style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
           <h2 className={sectionTitle}>Skills</h2>
           <div className="w-12 h-px bg-gray-300 mx-auto mb-4" />
           <p className="text-gray-700 leading-[1.5]">{skills.join(" · ")}</p>
