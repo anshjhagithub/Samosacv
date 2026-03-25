@@ -18,7 +18,7 @@ export default function TermsPage() {
           <p><strong>Disclaimer.</strong> The service is provided &ldquo;as is.&rdquo; We do not guarantee employment outcomes or ATS results.</p>
           <p><strong>Limitation of liability.</strong> To the extent permitted by law, we are not liable for indirect, incidental, or consequential damages arising from use of the service.</p>
           <p><strong>Changes.</strong> We may update these terms; continued use after changes constitutes acceptance.</p>
-          <p>Contact: <a href="mailto:support@samosacv.com" className="text-amber-700 hover:underline">support@samosacv.com</a></p>
+          <p>Contact: <a href="mailto:support@samosacv.in" className="text-amber-700 hover:underline">support@samosacv.in</a></p>
         </div>
         <Link href="/" className="inline-block mt-8 text-sm text-amber-700 hover:underline font-medium">← Back to home</Link>
       </main>

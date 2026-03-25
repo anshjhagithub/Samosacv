@@ -86,7 +86,7 @@ export async function POST(req: Request) {
   order_currency: "INR",
   customer_details: {
     customer_id: userId,
-    customer_email: "guest@samosacv.com",
+    customer_email: "guest@samosacv.in",
     customer_phone: phone,
   },
   order_meta: {

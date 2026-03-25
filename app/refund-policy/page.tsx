@@ -12,8 +12,8 @@ export default function RefundPolicyPage() {
           <p><strong>Last updated:</strong> February 2025</p>
           <p><strong>Nature of service.</strong> Samosa CV offers AI resume generation, tailoring, and export. Once payment is successful, you receive access to premium features as described on the pricing page.</p>
           <p><strong>Refund conditions.</strong> If you were charged but did not receive the promised access due to a technical error, we will rectify or refund within 7–10 business days. Refunds are not provided for change of mind after successful use. Duplicate charges will be refunded upon verification.</p>
-          <p><strong>How to request.</strong> Email support@samosacv.com with your order ID and reason. We respond within 5 business days.</p>
-          <p>Contact: <a href="mailto:support@samosacv.com" className="text-amber-700 hover:underline">support@samosacv.com</a></p>
+          <p><strong>How to request.</strong> Email support@samosacv.in with your order ID and reason. We respond within 5 business days.</p>
+          <p>Contact: <a href="mailto:support@samosacv.in" className="text-amber-700 hover:underline">support@samosacv.in</a></p>
         </div>
         <Link href="/" className="inline-block mt-8 text-sm text-amber-700 hover:underline font-medium">← Back to home</Link>
       </main>

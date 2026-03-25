@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://samosacv.com";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://samosacv.in";
 
 export const metadata: Metadata = {
   title: "Get Started — Build Your Resume in 4 Steps | Samosa CV",

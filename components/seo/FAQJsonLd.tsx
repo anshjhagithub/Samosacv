@@ -2,7 +2,7 @@
 
 import { getFAQPageJsonLd } from "@/lib/seo/jsonLd";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://samosacv.com";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://samosacv.in";
 
 /** Renders FAQPage JSON-LD for homepage (rich results in Google). */
 export function FAQJsonLd() {

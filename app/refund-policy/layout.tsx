@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://samosacv.com";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://samosacv.in";
 
 export const metadata: Metadata = {
   title: "Refund Policy | Samosa CV — India's AI Resume Builder",
-  description: "Samosa CV refund policy. Refund conditions, how to request. India's AI resume builder. Contact: support@samosacv.com.",
+  description: "Samosa CV refund policy. Refund conditions, how to request. India's AI resume builder. Contact: support@samosacv.in.",
   alternates: { canonical: `${siteUrl}/refund-policy` },
   robots: { index: true, follow: true },
 };

@@ -12,7 +12,7 @@ export async function getGuestUserId(): Promise<string> {
       return usersData.users[0].id;
     }
     const { data: newUser } = await admin.auth.admin.createUser({
-      email: "guest@samosacv.com",
+      email: "guest@samosacv.in",
       password: "guestpassword123",
       email_confirm: true,
     });

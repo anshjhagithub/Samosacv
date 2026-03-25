@@ -1,6 +1,6 @@
 import { getBreadcrumbJsonLd } from "@/lib/seo/jsonLd";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://samosacv.com";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://samosacv.in";
 
 type Props = { items: { name: string; path: string }[] };
 

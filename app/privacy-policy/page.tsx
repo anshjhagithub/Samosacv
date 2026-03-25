@@ -24,7 +24,7 @@ export default function PrivacyPolicyPage() {
           <p><strong>Cookies.</strong> We use cookies and local storage for session and preferences.</p>
           <p><strong>Your rights.</strong> Request access, correction, or deletion by emailing us.</p>
           <p><strong>Changes.</strong> We may update this policy and will post the revised version here.</p>
-          <p>Contact: <a href="mailto:support@samosacv.com" className="text-amber-700 hover:underline">support@samosacv.com</a></p>
+          <p>Contact: <a href="mailto:support@samosacv.in" className="text-amber-700 hover:underline">support@samosacv.in</a></p>
         </div>
         <Link href="/" className="inline-block mt-8 text-sm text-amber-700 hover:underline font-medium">← Back to home</Link>
       </main>
