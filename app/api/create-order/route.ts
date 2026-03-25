@@ -90,7 +90,7 @@ export async function POST(req: Request) {
     customer_phone: phone,
   },
   order_meta: {
-    return_url: `${process.env.NEXT_PUBLIC_SITE_URL}/payment-status?order_id={order_id}`
+    return_url: `https://samosacv.in/payment-status?order_id={order_id}`
   }
 }),
     });

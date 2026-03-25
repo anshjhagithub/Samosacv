@@ -1,6 +1,6 @@
 import { getOrganizationJsonLd, getWebApplicationJsonLd } from "@/lib/seo/jsonLd";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://samosacv.in";
+const siteUrl = "https://samosacv.in";
 
 /** Renders Organization + WebApplication JSON-LD in head. Use in root layout. */
 export function JsonLdScript() {

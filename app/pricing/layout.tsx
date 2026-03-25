@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://samosacv.in";
+const siteUrl = "https://samosacv.in";
 
 export const metadata: Metadata = {
   title: "Pricing — ₹15 Resume Builder Plans | Samosa CV India",

@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://samosacv.in";
+const siteUrl = "https://samosacv.in";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
