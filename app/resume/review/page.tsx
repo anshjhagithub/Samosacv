@@ -34,7 +34,7 @@ const safeUUID = () => {
     if (typeof crypto !== "undefined" && crypto.randomUUID) {
       return crypto.randomUUID();
     }
-  } catch {}
+  } catch { }
   return "id-" + Math.random().toString(36).slice(2);
 };
 
@@ -64,25 +64,25 @@ export default function ResumeReviewPage() {
     try {
       // For now, enable all features for free
       setHasPaymentSuccess(true);
-      
+
       // Set all add-ons as available for free
       const freeAddons = [
         'linkedin_optimizer',
-        'interview_pack', 
+        'interview_pack',
         'ats_improver',
         'skill_roadmap',
         'cover_letter',
         'ats_breakdown'
       ];
       setPurchasedAddons(freeAddons);
-      
+
     } catch (error) {
       console.error("Check payment error:", error);
       // Even on error, enable features for free
       setHasPaymentSuccess(true);
       setPurchasedAddons([
         'linkedin_optimizer',
-        'interview_pack', 
+        'interview_pack',
         'ats_improver',
         'skill_roadmap',
         'cover_letter',
@@ -93,18 +93,85 @@ export default function ResumeReviewPage() {
 
   useEffect(() => {
     try {
-      const raw = loadResume();
+      let raw = loadResume();
       setGenerated(getGeneratedResult());
+
+      // Fallback: if no resume data found, try to reconstruct from flow storage
+      if (!raw && typeof window !== 'undefined') {
+        try {
+          const { getBasicInfo, getExperienceList, getProjectList, getEducationList } = require('@/lib/resumeFlowStorage');
+          const basic = getBasicInfo();
+          const expList = getExperienceList();
+          const eduList = getEducationList();
+          const projList = getProjectList();
+
+          // Only reconstruct if we have at least a name (proof that flow data exists)
+          if (basic.fullName) {
+            const reconstructed: ResumeData = {
+              templateId: 'classic' as any,
+              personal: {
+                fullName: basic.fullName,
+                title: basic.targetRole || '',
+                email: '',
+                phone: '',
+                location: basic.location || '',
+                linkedin: '',
+                website: '',
+              },
+              summary: '',
+              experience: expList.map((exp: any) => ({
+                id: safeUUID(),
+                jobTitle: exp.jobTitle || '',
+                company: exp.company || '',
+                location: '',
+                startDate: '',
+                endDate: exp.duration || '',
+                current: false,
+                bullets: [],
+              })),
+              education: eduList.map((edu: any) => ({
+                id: safeUUID(),
+                school: edu.school || '',
+                degree: edu.degree || '',
+                field: edu.field || '',
+                startDate: '',
+                endDate: edu.duration || '',
+                gpa: '',
+              })),
+              skills: [],
+              certifications: [],
+              projects: projList.length > 0
+                ? projList.map((p: any) => ({
+                  id: safeUUID(),
+                  title: p.title || '',
+                  description: p.oneLiner || '',
+                  bullets: [],
+                  links: [],
+                }))
+                : [createEmptyProject(safeUUID())],
+            };
+            raw = reconstructed;
+            // Save the reconstructed data so it persists
+            saveResume(reconstructed);
+          }
+        } catch (flowErr) {
+          console.warn('Could not reconstruct from flow storage:', flowErr);
+        }
+      }
+
       setData(raw ? ensureProjects(raw) : null);
-      
+
       // Try multiple sources to find the resumeId
       const preview = getUnlockPreview();
       const lsResumeId = typeof window !== 'undefined' ? localStorage.getItem('samosa_last_resume_id') : null;
       const finalResumeId = preview?.resumeId || lsResumeId || null;
-      
+
       if (finalResumeId) {
         setResumeId(finalResumeId);
         checkPaymentStatus(finalResumeId);
+      } else {
+        // Even without a resumeId, enable features (everything is free)
+        checkPaymentStatus('guest');
       }
     } catch (e: any) {
       console.error("INIT ERROR:", e);
@@ -132,7 +199,7 @@ export default function ResumeReviewPage() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Failed");
-      
+
       // Update local state and storage
       setData(json.resume);
       saveResume(json.resume);
@@ -165,31 +232,31 @@ export default function ResumeReviewPage() {
   // Calculate ATS score from current resume data
   const calculateAtsScore = useCallback((resumeData: ResumeData) => {
     if (!resumeData) return 0;
-    
+
     // Convert resume data to text format for ATS scoring
     const resumeText = `
       ${resumeData.personal?.title || ''}
       ${resumeData.summary || ''}
       
       Experience:
-      ${resumeData.experience.map(exp => 
-        `${exp.jobTitle} at ${exp.company}\n${exp.bullets.join('\n')}`
-      ).join('\n\n')}
+      ${resumeData.experience.map(exp =>
+      `${exp.jobTitle} at ${exp.company}\n${exp.bullets.join('\n')}`
+    ).join('\n\n')}
       
       Education:
-      ${resumeData.education.map(edu => 
-        `${edu.degree} in ${edu.field} at ${edu.school}`
-      ).join('\n')}
+      ${resumeData.education.map(edu =>
+      `${edu.degree} in ${edu.field} at ${edu.school}`
+    ).join('\n')}
       
       Skills:
       ${resumeData.skills.join(', ')}
       
       Projects:
-      ${resumeData.projects?.map(proj => 
-        `${proj.title}: ${proj.description}\n${proj.bullets?.join('\n') || ''}`
-      ).join('\n\n') || ''}
+      ${resumeData.projects?.map(proj =>
+      `${proj.title}: ${proj.description}\n${proj.bullets?.join('\n') || ''}`
+    ).join('\n\n') || ''}
     `;
-    
+
     const targetRole = resumeData.personal?.title || 'Professional';
     const result = scoreResume(resumeText.trim(), targetRole);
     return result.finalScore;
@@ -198,7 +265,7 @@ export default function ResumeReviewPage() {
   // Get current ATS score
   const currentAtsScore = data ? calculateAtsScore(data) : 0;
   const displayAtsScore = currentAtsScore > 0 ? currentAtsScore : Math.min(100, generated?.atsScore ?? 0);
-  
+
   // Always show ATS score above 90 for review page
   const finalDisplayAtsScore = Math.max(91, displayAtsScore);
 
@@ -217,7 +284,7 @@ export default function ResumeReviewPage() {
           addons: purchasedAddonsList
         })
       });
-      
+
       const resData = await res.json();
       const addonsResult = resData.addons || [];
       if (addonsResult.length === 0) return;
@@ -242,7 +309,7 @@ export default function ResumeReviewPage() {
         const pdf = new jsPDF("p", "mm", "a4");
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const docEl = container.firstElementChild as HTMLElement;
-        
+
         if (docEl) {
           const canvas = await html2canvas(docEl, { scale: 2, useCORS: true });
           const imgData = canvas.toDataURL("image/png");
@@ -251,7 +318,7 @@ export default function ResumeReviewPage() {
           pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfH);
           pdf.save(`${addon.title.replace(/\s+/g, '_')}-${resumeData.personal?.fullName || "details"}.pdf`);
         }
-        
+
         document.body.removeChild(container);
       }
     } catch (error) {
@@ -262,10 +329,10 @@ export default function ResumeReviewPage() {
   // ✅ SIMPLIFIED MOBILE PDF DOWNLOAD
   const handleMaybeLaterDownload = async () => {
     if (!data) return;
-    
+
     // Check if mobile device
     const isMobile = isMobileDevice();
-    
+
     try {
       const el = document.querySelector(".resume-pdf-source");
       if (!el) {
@@ -275,10 +342,10 @@ export default function ResumeReviewPage() {
       // Import required modules
       const html2canvas = (await import('html2canvas-pro')).default;
       const jsPDF = (await import('jspdf')).default;
-      
+
       let targetEl = el as HTMLElement;
       let wrapper: HTMLDivElement | null = null;
-      
+
       // Always clone into a fixed width container (A4) to avoid text scaling/kerning bugs with html2canvas (e.g., text bunching up)
       wrapper = document.createElement('div');
       wrapper.style.position = 'absolute';
@@ -286,19 +353,19 @@ export default function ResumeReviewPage() {
       wrapper.style.left = '-9999px';
       wrapper.style.width = '794px'; // ~A4 width
       wrapper.style.backgroundColor = 'white';
-      
+
       const clone = el.cloneNode(true) as HTMLElement;
       // Remove any inline scaling that might have been copied
       clone.style.transform = 'none';
       clone.style.transformOrigin = 'unset';
-      
+
       wrapper.appendChild(clone);
       document.body.appendChild(wrapper);
       targetEl = clone;
-      
+
       // Wait a small tick to let css apply to the cloned node and fonts to settle
       await new Promise(r => setTimeout(r, 100));
-      
+
       const scale = isMobile ? 1.5 : 2;
 
       // Generate canvas with mobile optimizations
@@ -311,18 +378,18 @@ export default function ResumeReviewPage() {
         foreignObjectRendering: false,
         imageTimeout: 15000, // 15 seconds timeout for images
       });
-      
+
       if (wrapper && wrapper.parentNode) {
         wrapper.parentNode.removeChild(wrapper);
       }
-      
+
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
-      
+
       const imgData = canvas.toDataURL('image/png', 0.8); // Slightly lower quality for mobile/memory
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      
+
       // Clean up canvas to free memory
       canvas.width = 1;
       canvas.height = 1;
@@ -330,12 +397,12 @@ export default function ResumeReviewPage() {
       // Save PDF
       const filename = `resume-${data.personal?.fullName || 'resume'}-${Date.now()}.pdf`;
       pdf.save(filename);
-      
+
       // Show success message
       if (isMobile) {
         alert('PDF downloaded successfully! Note: For best quality, consider using a desktop computer.');
       }
-      
+
     } catch (error) {
       console.error('Download error:', error);
       // Fallback to text download
@@ -350,10 +417,10 @@ export default function ResumeReviewPage() {
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
-        
+
         // Still try to generate add-ons
         await generateAddons(data);
-        
+
         alert('PDF generation failed. Text version downloaded instead.');
       } catch (fallbackError) {
         console.error('Fallback download failed:', fallbackError);
@@ -364,41 +431,41 @@ export default function ResumeReviewPage() {
   const handlePaidDownload = async () => {
     if (!data) return;
     const isMobile = isMobileDevice();
-    
+
     try {
       const el = document.querySelector(".resume-pdf-source");
       if (!el) throw new Error("Could not find resume preview");
 
       const html2canvas = (await import('html2canvas-pro')).default;
       const jsPDF = (await import('jspdf')).default;
-      
+
       const wrapper = document.createElement('div');
       wrapper.style.position = 'absolute';
       wrapper.style.top = '-9999px';
       wrapper.style.left = '-9999px';
       wrapper.style.width = '794px';
       wrapper.style.backgroundColor = 'white';
-      
+
       const clone = el.cloneNode(true) as HTMLElement;
       clone.style.transform = 'none';
       wrapper.appendChild(clone);
       document.body.appendChild(wrapper);
-      
+
       await new Promise(r => setTimeout(r, 100));
-      
+
       const canvas = await html2canvas(clone, {
         scale: isMobile ? 1.5 : 2,
         useCORS: true,
         backgroundColor: '#ffffff',
       });
-      
+
       document.body.removeChild(wrapper);
-      
+
       const pdf = new jsPDF('p', 'mm', 'a4');
       const imgData = canvas.toDataURL('image/png', 0.8);
       pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
       pdf.save(`resume-${data.personal?.fullName || 'resume'}.pdf`);
-      
+
     } catch (error) {
       console.error('Download error:', error);
       const resumeText = createResumeDoc(data);
@@ -616,9 +683,9 @@ export default function ResumeReviewPage() {
           ` : ''}
           ${proj.links && proj.links.length > 0 ? `
             <div class="links">
-              ${proj.links.map(link => 
-                link.url && link.label ? `<a href="${link.url}" target="_blank">${link.label}</a>` : ''
-              ).filter(link => link).join(' | ')}
+              ${proj.links.map(link =>
+        link.url && link.label ? `<a href="${link.url}" target="_blank">${link.label}</a>` : ''
+      ).filter(link => link).join(' | ')}
             </div>
           ` : ''}
         </div>
@@ -648,7 +715,7 @@ export default function ResumeReviewPage() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      
+
       // Also open in new window for printing to PDF
       const printWindow = window.open('', '_blank');
       if (printWindow) {
@@ -659,7 +726,7 @@ export default function ResumeReviewPage() {
           printWindow.print();
         }, 500);
       }
-      
+
     } catch (error) {
       console.error('Download error:', error);
       alert('Failed to download resume. Please try again.');
@@ -697,7 +764,7 @@ ${edu.school}
 ${edu.startDate} - ${edu.endDate}
 `).join('\n')}
       `.trim();
-      
+
       const blob = new Blob([linkedinContent], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -707,7 +774,7 @@ ${edu.startDate} - ${edu.endDate}
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      
+
       alert('LinkedIn Optimizer downloaded successfully!');
     } catch (error) {
       console.error('LinkedIn optimizer error:', error);
@@ -749,7 +816,7 @@ Action: ${exp.bullets?.[1] || 'Action taken'}
 Result: ${exp.bullets?.[2] || 'Outcome achieved'}
 `).join('\n')}
       `.trim();
-      
+
       const blob = new Blob([interviewContent], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -759,7 +826,7 @@ Result: ${exp.bullets?.[2] || 'Outcome achieved'}
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      
+
       alert('Interview Prep downloaded successfully!');
     } catch (error) {
       console.error('Interview prep error:', error);
@@ -772,7 +839,7 @@ Result: ${exp.bullets?.[2] || 'Outcome achieved'}
     try {
       let content = '';
       let filename = '';
-      
+
       switch (addonSlug) {
         case 'ats_improver':
           content = `
@@ -798,7 +865,7 @@ ${(exp.bullets || []).slice(0, 2).map(bullet => `• ${bullet}`).join('\n')}
           `.trim();
           filename = `ATS_Improver_${resumeData.personal?.fullName || 'resume'}_${Date.now()}.txt`;
           break;
-          
+
         case 'skill_roadmap':
           content = `
 SKILL DEVELOPMENT ROADMAP
@@ -829,7 +896,7 @@ RESOURCES
           `.trim();
           filename = `Skill_Roadmap_${resumeData.personal?.fullName || 'resume'}_${Date.now()}.txt`;
           break;
-          
+
         case 'cover_letter':
           content = `
 PROFESSIONAL COVER LETTER
@@ -868,7 +935,7 @@ ${resumeData.personal?.fullName || ''}
           `.trim();
           filename = `Cover_Letter_${resumeData.personal?.fullName || 'resume'}_${Date.now()}.txt`;
           break;
-          
+
         case 'ats_breakdown':
           content = `
 ATS SCORE BREAKDOWN
@@ -886,13 +953,13 @@ SECTION ANALYSIS:
 • Skills: 8/10 ✓
 
 KEYWORD ANALYSIS:
-• Action Verbs Found: ${resumeData.experience?.flatMap(exp => exp.bullets || []).filter(bullet => 
-    ['Led', 'Developed', 'Managed', 'Created', 'Implemented', 'Achieved'].some(verb => 
-      bullet.toLowerCase().includes(verb.toLowerCase())
-    )).length || 0}
-• Quantified Achievements: ${resumeData.experience?.flatMap(exp => exp.bullets || []).filter(bullet => 
-      /\d+%|\d+ years|\$\d+/.test(bullet)
-    ).length || 0}
+• Action Verbs Found: ${resumeData.experience?.flatMap(exp => exp.bullets || []).filter(bullet =>
+            ['Led', 'Developed', 'Managed', 'Created', 'Implemented', 'Achieved'].some(verb =>
+              bullet.toLowerCase().includes(verb.toLowerCase())
+            )).length || 0}
+• Quantified Achievements: ${resumeData.experience?.flatMap(exp => exp.bullets || []).filter(bullet =>
+              /\d+%|\d+ years|\$\d+/.test(bullet)
+            ).length || 0}
 
 RECOMMENDATIONS:
 • Add more quantified achievements
@@ -912,12 +979,12 @@ OPTIMIZATION CHECKLIST:
           `.trim();
           filename = `ATS_Breakdown_${resumeData.personal?.fullName || 'resume'}_${Date.now()}.txt`;
           break;
-          
+
         default:
           alert('Add-on not available');
           return;
       }
-      
+
       const blob = new Blob([content], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -927,7 +994,7 @@ OPTIMIZATION CHECKLIST:
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      
+
       alert(`${addonSlug.replace(/_/g, ' ')} downloaded successfully!`);
     } catch (error) {
       console.error('Addon generation error:', error);

@@ -1,4 +1,5 @@
 const STORAGE_KEY = "resume_builder_data";
+const STORAGE_BACKUP_KEY = "resume_builder_data_backup";
 const UNLOCK_PREVIEW_KEY = "resume_unlock_preview";
 
 function isClient(): boolean {
@@ -20,9 +21,24 @@ export interface UnlockPreview {
 export function loadResume(): ResumeData | null {
   if (!isClient()) return null;
   try {
+    // Try localStorage first
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as ResumeData;
+    if (raw) {
+      return JSON.parse(raw) as ResumeData;
+    }
+    
+    // Fallback: try sessionStorage backup (survives payment gateway redirects)
+    try {
+      const backup = sessionStorage.getItem(STORAGE_BACKUP_KEY);
+      if (backup) {
+        const data = JSON.parse(backup) as ResumeData;
+        // Restore to localStorage so subsequent loads work
+        localStorage.setItem(STORAGE_KEY, backup);
+        return data;
+      }
+    } catch {}
+    
+    return null;
   } catch {
     return null;
   }
@@ -31,7 +47,12 @@ export function loadResume(): ResumeData | null {
 export function saveResume(data: ResumeData): void {
   if (!isClient()) return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    const json = JSON.stringify(data);
+    localStorage.setItem(STORAGE_KEY, json);
+    // Also save to sessionStorage as backup for payment redirects
+    try {
+      sessionStorage.setItem(STORAGE_BACKUP_KEY, json);
+    } catch {}
   } catch (e) {
     console.warn("Failed to save resume", e);
   }
