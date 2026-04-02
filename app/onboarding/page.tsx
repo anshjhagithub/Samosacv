@@ -68,8 +68,10 @@ export default function OnboardingPage() {
     if (inputMethod === "upload-pdf") {
       if (typeof window !== "undefined") {
         window.sessionStorage.setItem("createMethod", "pdf");
-        window.location.href = "/create?method=pdf";
-      } else { router.push("/create?method=pdf"); }
+        window.location.href = "/create/pdf";
+      } else { 
+        router.push("/create/pdf"); 
+      }
       return;
     }
     if (inputMethod === "job-description") {
