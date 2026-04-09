@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
+import { Analytics } from '@vercel/analytics/next';
 
 const siteUrl = "https://samosacv.in";
 
@@ -109,7 +110,10 @@ export default function RootLayout({
         <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
         <JsonLdScript />
       </head>
-      <body className="min-w-0 antialiased theme-light">{children}</body>
+      <body className="min-w-0 antialiased theme-light">
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }
